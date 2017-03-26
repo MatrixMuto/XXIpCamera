@@ -1,7 +1,5 @@
 package com.mut0.xxcam2;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -9,17 +7,12 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.os.Handler;
-import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by muto on 17-3-25.
@@ -103,13 +96,20 @@ public class XXCamera2 {
         }
     };
 
+    XXVEncoder encoder;
+
     private void startPreivew() {
         try {
             mPreviewRequestBuilder
                     = camera_device.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mPreviewRequestBuilder.addTarget(surface);
 
-            camera_device.createCaptureSession(Arrays.asList(surface), cam_cap_sess_cb, handler);
+            encoder = new XXVEncoder();
+            Surface surface2 = encoder.getSurface();
+            mPreviewRequestBuilder.addTarget(surface2);
+            camera_device.createCaptureSession(Arrays.asList(surface,surface2), cam_cap_sess_cb, handler);
+//            camera_device.createCaptureSession(Arrays.asList(surface), cam_cap_sess_cb, handler);
+            encoder.start();
 
         } catch (CameraAccessException e) {
             e.printStackTrace();

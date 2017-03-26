@@ -13,7 +13,10 @@ import android.view.SurfaceView;
 import com.mut0.xxcam2.XXCamera2;
 
 public class MainActivity extends AppCompatActivity {
-
+    static {
+        System.loadLibrary("native-lib");
+    }
+    XXCamera2 cam;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
 
-        XXCamera2 cam = new XXCamera2(manager, holder);
+        cam = new XXCamera2(manager, holder);
 
 
 
