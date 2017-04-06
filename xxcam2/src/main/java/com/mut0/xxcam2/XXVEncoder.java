@@ -65,12 +65,12 @@ public class XXVEncoder {
 
         @Override
         public void onOutputBufferAvailable(@NonNull MediaCodec codec, int index, @NonNull MediaCodec.BufferInfo info) {
-//                info.presentationTimeUs
-            Log.d("xxxx", "onOutputBufferAvailable "+index +" " +info.presentationTimeUs +" " + info.flags);
             ByteBuffer byteBuffer = codec.getOutputBuffer(index);
-            Log.d("xxxx", "" + byteBuffer.get(0) + " "+ byteBuffer.get(3) );
-            codec.releaseOutputBuffer(index, false);
+            Log.d("xxxx", "onOutputBufferAvailable "+index +" " +info.presentationTimeUs +" " + info.flags + " " + byteBuffer);
+            if ( 1 == (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME)) {
 
+            }
+            codec.releaseOutputBuffer(index, false);
         }
 
         @Override

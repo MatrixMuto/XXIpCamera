@@ -6,7 +6,7 @@
 #include <string.h>
 
 // for __android_log_print(ANDROID_LOG_INFO, "YourApp", "formatted message");
-// #include <android/log.h>
+ #include <android/log.h>
 
 // for native audio
 #include <SLES/OpenSLES.h>
@@ -20,6 +20,13 @@
 void test()
 {
 
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_mut0_xxcam2_XXFlvMux_nativeTest(JNIEnv* env, jclass clazz)
+{
+    __android_log_print(ANDROID_LOG_INFO, "YourApp", "formatted message");
+    return 0;
 }
 
 #if 0

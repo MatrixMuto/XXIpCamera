@@ -5,4 +5,8 @@ package com.mut0.xxcam2;
  */
 
 public class XXFlvMux {
+    static {
+        System.loadLibrary("native-lib");
+    }
+    public static native int nativeTest();
 }

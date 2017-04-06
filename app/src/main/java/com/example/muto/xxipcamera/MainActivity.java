@@ -9,14 +9,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.widget.Button;
 
+import com.mut0.xxcam2.XXAEncoder;
 import com.mut0.xxcam2.XXCamera2;
+import com.mut0.xxcam2.XXFlvMux;
+import com.mut0.xxcam2.XXMicroPhone;
 
 public class MainActivity extends AppCompatActivity {
-    static {
-        System.loadLibrary("native-lib");
-    }
+
     XXCamera2 cam;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,6 +47,47 @@ public class MainActivity extends AppCompatActivity {
         }
 
         cam.init();
+
+        Button btn = (Button) findViewById(R.id.button);
+
+        btn.setOnClickListener(
+                new View.OnClickListener() {
+                   @Override
+                   public void onClick(View v) {
+                       XXFlvMux.nativeTest();
+                       XXAEncoder xp = new XXAEncoder();
+                   }
+               }
+        );
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
+
 
 }
