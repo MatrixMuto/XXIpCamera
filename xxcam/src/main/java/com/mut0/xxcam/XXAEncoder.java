@@ -59,7 +59,6 @@ public class XXAEncoder {
 
         @Override
         public void onOutputBufferAvailable(@NonNull MediaCodec codec, int index, @NonNull MediaCodec.BufferInfo info) {
-//                info.presentationTimeUs
             Log.d("xxxxA", "onOutputBufferAvailable " + index + " " + info.presentationTimeUs + " " + info.flags);
             ByteBuffer buffer = codec.getOutputBuffer(index);
 

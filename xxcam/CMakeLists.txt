@@ -16,6 +16,9 @@ add_library( native-lib
              SHARED
 
              src/main/cpp/native-lib.cpp
+             src/main/cpp/rtmp.cpp
+             src/main/cpp/xxio.cpp
+
              )
 
 find_library( log-lib log )

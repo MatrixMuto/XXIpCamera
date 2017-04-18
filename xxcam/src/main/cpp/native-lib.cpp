@@ -18,3 +18,25 @@ Java_com_mut0_xxcam_XXFlvMux_nativeTest(JNIEnv *env, jclass type) {
 
 }
 
+JNIEXPORT void JNICALL
+Java_com_mut0_xxcam_XXRtmpPublish_native_1add_1target(JNIEnv *env, jobject instance, jstring url_) {
+    const char *url = env->GetStringUTFChars(url_, 0);
+
+    // TODO
+
+    env->ReleaseStringUTFChars(url_, url);
+}
+
+JNIEXPORT void JNICALL
+Java_com_mut0_xxcam_XXRtmpPublish_native_1connect(JNIEnv *env, jobject instance) {
+
+    // TODO
+
+}
+
+JNIEXPORT void JNICALL
+Java_com_mut0_xxcam_XXRtmpPublish_native_1disconnect(JNIEnv *env, jobject instance) {
+
+    // TODO
+
+}

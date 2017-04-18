@@ -12,7 +12,9 @@ import java.nio.ByteBuffer;
  */
 
 public class XXMicroPhone {
+
     AudioRecord ar;
+
     public XXMicroPhone(){
         int minsize = AudioRecord.getMinBufferSize(48000,
                 AudioFormat.CHANNEL_OUT_STEREO,
@@ -23,9 +25,8 @@ public class XXMicroPhone {
                 48000,
                 AudioFormat.CHANNEL_OUT_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT,minsize*2);
+
         ar.startRecording();
-//        XXXThread t  = new XXXThread();
-//        t.start();
     }
 
     public int readAudip(ByteBuffer nBuf) {
