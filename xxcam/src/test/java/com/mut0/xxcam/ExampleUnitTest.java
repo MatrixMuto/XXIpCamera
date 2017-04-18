@@ -1,4 +1,4 @@
-package com.mut0.xxcam2;
+package com.mut0.xxcam;
 
 import org.junit.Test;
 

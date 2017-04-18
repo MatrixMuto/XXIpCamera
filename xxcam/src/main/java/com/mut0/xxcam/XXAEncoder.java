@@ -1,4 +1,4 @@
-package com.mut0.xxcam2;
+package com.mut0.xxcam;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -16,10 +16,11 @@ import java.nio.ByteBuffer;
 
 public class XXAEncoder {
 
+    private static final String TAG = "XXAEncoder";
     MediaCodec codec;
     XXMicroPhone pp;
 
-    public XXAEncoder(){
+    public XXAEncoder() {
         MediaFormat format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 48000, 2);
         format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
         format.setInteger(MediaFormat.KEY_BIT_RATE, 48000);
@@ -41,14 +42,12 @@ public class XXAEncoder {
             e.printStackTrace();
         }
 
-
     }
-
 
     MediaCodec.Callback mediacodecCallback = new MediaCodec.Callback() {
         @Override
         public void onInputBufferAvailable(@NonNull MediaCodec codec, int index) {
-            Log.d("xxxx", "onInputBufferAvailable "+index);
+            Log.d("xxxx", "onInputBufferAvailable " + index);
 
             ByteBuffer buffer = codec.getInputBuffer(index);
 
@@ -61,7 +60,7 @@ public class XXAEncoder {
         @Override
         public void onOutputBufferAvailable(@NonNull MediaCodec codec, int index, @NonNull MediaCodec.BufferInfo info) {
 //                info.presentationTimeUs
-            Log.d("xxxxA", "onOutputBufferAvailable "+index +" " +info.presentationTimeUs +" " + info.flags);
+            Log.d("xxxxA", "onOutputBufferAvailable " + index + " " + info.presentationTimeUs + " " + info.flags);
             ByteBuffer buffer = codec.getOutputBuffer(index);
 
             codec.releaseOutputBuffer(index, false);

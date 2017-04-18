@@ -13,26 +13,26 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 
-import com.mut0.xxcam2.XXAEncoder;
-import com.mut0.xxcam2.XXCamera2;
-import com.mut0.xxcam2.XXFlvMux;
-import com.mut0.xxcam2.XXMicroPhone;
+import com.mut0.xxcam.XXCamera;
 
 import junit.framework.Assert;
 
 public class MainActivity extends AppCompatActivity {
 
-    XXCamera2 cam0,cam1;
+    XXCamera cam0, cam1;
     private static final int PERMISSION_REQUEST_CODE_CAMERA = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
         setContentView(R.layout.activity_main);
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
                     this,
-                    new String[] { Manifest.permission.CAMERA },
+                    new String[]{Manifest.permission.CAMERA},
                     PERMISSION_REQUEST_CODE_CAMERA);
             return;
         }
@@ -56,21 +56,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startCamera()
-    {
+    private void startCamera() {
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         {
             SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
-            SurfaceHolder holder =surfaceView.getHolder();
-            holder.setFixedSize(1280,720);
-            cam0 = new XXCamera2(manager, holder);
+            SurfaceHolder holder = surfaceView.getHolder();
+            holder.setFixedSize(1280, 720);
+            cam0 = new XXCamera(manager, holder);
             cam0.init("0");
         }
 //        {
 //            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView2);
 //            SurfaceHolder holder =surfaceView.getHolder();
 //            holder.setFixedSize(1280,720);
-//            cam1 = new XXCamera2(manager, holder);
+//            cam1 = new XXCamera(manager, holder);
 //            cam1.init("2");
 //        }
 
@@ -86,22 +85,21 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
     }
+
     @Override
     protected void onStart() {
         super.onStart();
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-    }
-
-
-    @Override
     protected void onResume() {
         super.onResume();
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
 
     @Override
     protected void onStop() {
@@ -112,7 +110,5 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
     }
-
-
 
 }
