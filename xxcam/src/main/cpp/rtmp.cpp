@@ -17,8 +17,8 @@ int XXRtmp::Connect() {
 //    xxio::Connect(address, this);
     return 0;
 }
-
-int XXRtmp::IoCallback(){
-
-}
+//
+//int XXRtmp::IoCallback(){
+//
+//}
 

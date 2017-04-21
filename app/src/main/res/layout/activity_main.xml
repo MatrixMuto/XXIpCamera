@@ -22,14 +22,23 @@
         tools:layout_editor_absoluteY="190dp"
         android:layout_below="@+id/surfaceView"
         android:layout_alignParentStart="true" />
+
     <Button
-        android:id="@+id/button"
+        android:id="@+id/btnCapture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Button"
-        tools:layout_editor_absoluteX="136dp"
-        tools:layout_editor_absoluteY="417dp"
         android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:text="Capture"
+        tools:layout_editor_absoluteX="136dp"
+        tools:layout_editor_absoluteY="417dp" />
+
+    <Button
+        android:id="@+id/btnSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Switch"
+        android:layout_above="@+id/btnCapture"
         android:layout_alignParentStart="true" />
 
 </RelativeLayout>

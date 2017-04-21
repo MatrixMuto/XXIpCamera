@@ -3,24 +3,28 @@ package com.mut0.xxcam;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
 import android.view.SurfaceHolder;
-import android.widget.Toast;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * Created by muto on 17-3-25.
@@ -29,14 +33,15 @@ import java.util.ArrayList;
 public class XXCamera {
 
     private static final String TAG = "XXCamera";
+    private SurfaceHolder hodler;
 
     private CameraManager manager;
     private Surface surface;
-    private CameraDevice camerDevice_;
+    private CameraDevice mCameraDevice;
     private CaptureRequest.Builder prevReqBuilder;
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
-    private String id;
+    private String mCameraId;
     private long index;
     private ImageReader previewReader_;
     private XXVEncoder encoder;
@@ -59,6 +64,7 @@ public class XXCamera {
     public XXCamera(CameraManager manager, SurfaceHolder holder, ImageReader.OnImageAvailableListener listener) {
         this.manager = manager;
         holder.addCallback(surfaceHolderCallback);
+        this.hodler = holder;
         this.listener = listener;
     }
 
@@ -78,39 +84,82 @@ public class XXCamera {
             e.printStackTrace();
         }
     }
+    Size mJpegSize;
+    public void setJpegSize(Size size) {
+        mJpegSize = size;
+    }
 
-    public void init(String cam_id) {
+    public void open(String cameraId) {
         startBackgroundThread();
-        id = cam_id;
+        mCameraId = cameraId;
         try {
-//            String[] camidlist = manager.getCameraIdList();
-//            String back_id = null;
-//            for (String id : camidlist) {
-//                CameraCharacteristics cc = manager.getCameraCharacteristics(id);
-//                Integer facing = cc.get(CameraCharacteristics.LENS_FACING);
+            String[] camidlist = manager.getCameraIdList();
+            String back_id = null;
+            for (String id : camidlist) {
+                Log.d(TAG,"camera mCameraId =[" + id +"]");
+                CameraCharacteristics cc = manager.getCameraCharacteristics(id);
+
+                StreamConfigurationMap map = cc.get(
+                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                Size largestJpeg = Collections.max(
+                        Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
+                        new CompareSizesByArea());
+
+
+                int mSensorOrientation = cc.get(CameraCharacteristics.SENSOR_ORIENTATION);
+
+                Log.d(TAG, "max jpeg " + largestJpeg.getWidth() + largestJpeg.getHeight() + " " + mSensorOrientation);
 //                if (facing == CameraCharacteristics.LENS_FACING_BACK) {
-//                    Log.d("xxxx","camera id =[" + id +"]");
-//                    manager.openCamera(id, cam_dev_cb, handler);
+//                    manager.openCamera(mCameraId, cam_dev_cb, handler);
 //                    break;
 //                }
-//
-//            }
-            manager.openCamera(cam_id, cam_dev_cb, mBackgroundHandler);
+            }
+            manager.openCamera(cameraId, cam_dev_cb, mBackgroundHandler);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Comparator based on area of the given {@link Size} objects.
+     */
+    static class CompareSizesByArea implements Comparator<Size> {
+
+        @Override
+        public int compare(Size lhs, Size rhs) {
+            // We cast here to ensure the multiplications won't overflow
+            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
+                    (long) rhs.getWidth() * rhs.getHeight());
+        }
+    }
+
     public void close() {
+
+
+
+        if (null != mCaptureSession) {
+            mCaptureSession.close();
+            mCaptureSession = null;
+        }
+        if (null != mCameraDevice) {
+            mCameraDevice.close();
+            mCameraDevice = null;
+        }
+        if (null != mJpegImageReader) {
+            mJpegImageReader.close();
+            mJpegImageReader = null;
+        }
+
         stopBackgroundThread();
+
     }
 
     private void startPreivew() {
         try {
             ArrayList<Surface> outputs = new ArrayList<>();
             //PreviewSurface
-            outputs.add(surface);
+            outputs.add(hodler.getSurface());
 
             //preview imagereader
             previewReader_ = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 10);
@@ -122,11 +171,11 @@ public class XXCamera {
 //            prevReqBuilder.addTarget(surface2);
 
             //StillCaputre ImageReader
-            mJpegImageReader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, /*maxImages*/1);
+            mJpegImageReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.JPEG, /*maxImages*/1);
             mJpegImageReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
             outputs.add(mJpegImageReader.getSurface());
 
-            camerDevice_.createCaptureSession(outputs, createSessionCallback_, mBackgroundHandler);
+            mCameraDevice.createCaptureSession(outputs, createSessionCallback_, mBackgroundHandler);
 
 //            encoder.start();
 
@@ -139,38 +188,38 @@ public class XXCamera {
 
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
-            Log.d("xxxx", "onOpened");
-            camerDevice_ = camera;
-            if (surface != null) {
+            Log.d(TAG, "onOpened");
+            mCameraDevice = camera;
+
+            if (!hodler.isCreating()) {
                 startPreivew();
             }
         }
 
         @Override
         public void onDisconnected(@NonNull CameraDevice camera) {
-            Log.d("xxxx", "onDisconnected");
+            Log.d(TAG, "onDisconnected");
         }
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
 
-            Log.d("xxxx", "onError");
+            Log.d(TAG, "onError");
         }
     };
 
     SurfaceHolder.Callback surfaceHolderCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
-            Log.d("xxxx", "surfaceCreated");
-            surface = holder.getSurface();
-            if (camerDevice_ != null) {
+            Log.d(TAG, "surfaceCreated");
+            if (mCameraDevice != null) {
                 startPreivew();
             }
         }
 
         @Override
         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            Log.d("xxxx", "surfaceChanged");
+            Log.d(TAG, "surfaceChanged");
         }
 
         @Override
@@ -182,11 +231,13 @@ public class XXCamera {
     CameraCaptureSession.StateCallback createSessionCallback_ = new CameraCaptureSession.StateCallback() {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
+            Log.d(TAG, "onConfigured");
             mCaptureSession = session;
             try {
-                prevReqBuilder = camerDevice_.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                prevReqBuilder.addTarget(surface);
-                prevReqBuilder.addTarget(previewReader_.getSurface());
+                prevReqBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+//                prevReqBuilder.set(CaptureRequest.JPEG_ORIENTATION, );
+                prevReqBuilder.addTarget(hodler.getSurface());
+//                prevReqBuilder.addTarget(previewReader_.getSurface());
 
                 mPreviewRequest = prevReqBuilder.build();
                 mCaptureSession.setRepeatingRequest(mPreviewRequest, null, mBackgroundHandler);
@@ -220,7 +271,7 @@ public class XXCamera {
             Image image = reader.acquireNextImage();
             index++;
             Image.Plane[] planes = image.getPlanes();
-            Log.d("xxxx", "camera" + id + ":" + image.getTimestamp()
+            Log.d(TAG, "camera" + mCameraId + ":" + image.getTimestamp()
                     + "[" + image.getWidth() + "," + image.getHeight() + "]"
                     + "planes:" + planes.length
             );
@@ -232,19 +283,19 @@ public class XXCamera {
     private ImageReader.OnImageAvailableListener mOnJpegImageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
-//            mBackgroundHandler.post(new ImageSaver(previewReader_.acquireNextImage(), mFile));
-            Image image = reader.acquireNextImage();
-
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-
-            image.close();
+//            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            if (listener != null) {
+                listener.onImageAvailable(reader);
+            }
         }
+
+
     };
 
     public void takePicture() {
-        lockFocus();
+
+        captureStillPicture();
+//        lockFocus();
     }
 
     private void lockFocus() {
@@ -261,9 +312,7 @@ public class XXCamera {
 
     private void unlockFocus() {
         try {
-            // Reset the auto-focus trigger
-            prevReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                    CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+            prevReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
 //            setAutoFlash(prevReqBuilder);
             mCaptureSession.capture(prevReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
             // After this, the camera will go back to the normal state of preview.
@@ -340,27 +389,11 @@ public class XXCamera {
 
     };
 
-    private void showToast(final String text) {
-//        final Activity activity = getActivity();
-//        if (activity != null) {
-//            activity.runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    Toast.makeText(activity, text, Toast.LENGTH_SHORT).show();
-//                }
-//            });
-//        }
-    }
-
     private void captureStillPicture() {
         try {
-//            final Activity activity = getActivity();
-//            if (null == activity || null == mCameraDevice) {
-//                return;
-//            }
             // This is the CaptureRequest.Builder that we use to take a picture.
             final CaptureRequest.Builder captureBuilder =
-                    camerDevice_.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mJpegImageReader.getSurface());
 
             // Use the same AE and AF modes as the preview.
@@ -370,7 +403,12 @@ public class XXCamera {
 
             // Orientation
 //            int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 270);
+            if (mCameraId == "0") {
+                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
+            }
+            else {
+                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
+            }
 
 //            mCaptureSession.stopRepeating();
 
