@@ -38,12 +38,12 @@ public class XXCamera {
     private CameraManager manager;
     private Surface surface;
     private CameraDevice mCameraDevice;
-    private CaptureRequest.Builder prevReqBuilder;
+    private CaptureRequest.Builder previewReqBuilder;
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
     private String mCameraId;
     private long index;
-    private ImageReader previewReader_;
+    private ImageReader previewReader;
     private XXVEncoder encoder;
     private ImageReader.OnImageAvailableListener listener;
     private CameraCaptureSession mCaptureSession;
@@ -99,20 +99,14 @@ public class XXCamera {
                 Log.d(TAG,"camera mCameraId =[" + id +"]");
                 CameraCharacteristics cc = manager.getCameraCharacteristics(id);
 
-                StreamConfigurationMap map = cc.get(
-                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                Size largestJpeg = Collections.max(
-                        Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                        new CompareSizesByArea());
+                StreamConfigurationMap map = cc.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                Size largestJpeg = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
 
 
                 int mSensorOrientation = cc.get(CameraCharacteristics.SENSOR_ORIENTATION);
 
                 Log.d(TAG, "max jpeg " + largestJpeg.getWidth() + largestJpeg.getHeight() + " " + mSensorOrientation);
-//                if (facing == CameraCharacteristics.LENS_FACING_BACK) {
-//                    manager.openCamera(mCameraId, cam_dev_cb, handler);
-//                    break;
-//                }
+
             }
             manager.openCamera(cameraId, cam_dev_cb, mBackgroundHandler);
 
@@ -136,8 +130,6 @@ public class XXCamera {
 
     public void close() {
 
-
-
         if (null != mCaptureSession) {
             mCaptureSession.close();
             mCaptureSession = null;
@@ -152,7 +144,6 @@ public class XXCamera {
         }
 
         stopBackgroundThread();
-
     }
 
     private void startPreivew() {
@@ -162,13 +153,13 @@ public class XXCamera {
             outputs.add(hodler.getSurface());
 
             //preview imagereader
-            previewReader_ = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 10);
-            previewReader_.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
-            outputs.add(previewReader_.getSurface());
+            previewReader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 10);
+            previewReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
+            outputs.add(previewReader.getSurface());
 
 //            encoder = new XXVEncoder();
 //            Surface surface2 = encoder.getSurface();
-//            prevReqBuilder.addTarget(surface2);
+//            previewReqBuilder.addTarget(surface2);
 
             //StillCaputre ImageReader
             mJpegImageReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.JPEG, /*maxImages*/1);
@@ -234,12 +225,11 @@ public class XXCamera {
             Log.d(TAG, "onConfigured");
             mCaptureSession = session;
             try {
-                prevReqBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-//                prevReqBuilder.set(CaptureRequest.JPEG_ORIENTATION, );
-                prevReqBuilder.addTarget(hodler.getSurface());
-//                prevReqBuilder.addTarget(previewReader_.getSurface());
+                previewReqBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                previewReqBuilder.addTarget(hodler.getSurface());
+//                previewReqBuilder.addTarget(previewReader.getSurface());
 
-                mPreviewRequest = prevReqBuilder.build();
+                mPreviewRequest = previewReqBuilder.build();
                 mCaptureSession.setRepeatingRequest(mPreviewRequest, null, mBackgroundHandler);
             } catch (CameraAccessException e) {
                 e.printStackTrace();
@@ -301,10 +291,10 @@ public class XXCamera {
     private void lockFocus() {
         try {
             // This is how to tell the camera to lock focus.
-            prevReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
+            previewReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
             // Tell #mCaptureCallback to wait for the lock.
             mState = STATE_WAITING_LOCK;
-            mCaptureSession.capture(prevReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
+            mCaptureSession.capture(previewReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -312,9 +302,9 @@ public class XXCamera {
 
     private void unlockFocus() {
         try {
-            prevReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-//            setAutoFlash(prevReqBuilder);
-            mCaptureSession.capture(prevReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
+            previewReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+//            setAutoFlash(previewReqBuilder);
+            mCaptureSession.capture(previewReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
             // After this, the camera will go back to the normal state of preview.
             mState = STATE_PREVIEW;
             mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback, mBackgroundHandler);
@@ -433,11 +423,11 @@ public class XXCamera {
     private void runPrecaptureSequence() {
         try {
             // This is how to tell the camera to trigger.
-            prevReqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+            previewReqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                     CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
             // Tell #mCaptureCallback to wait for the precapture sequence to be set.
             mState = STATE_WAITING_PRECAPTURE;
-            mCaptureSession.capture(prevReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
+            mCaptureSession.capture(previewReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }

@@ -11,7 +11,9 @@
 #include <sys/types.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
+#include "rtmp.h"
 
+static XXRtmp *rtmp = new XXRtmp();
 
 JNIEXPORT jint JNICALL
 Java_com_mut0_xxcam_XXFlvMux_nativeTest(JNIEnv *env, jclass type) {
@@ -19,18 +21,10 @@ Java_com_mut0_xxcam_XXFlvMux_nativeTest(JNIEnv *env, jclass type) {
 }
 
 JNIEXPORT void JNICALL
-Java_com_mut0_xxcam_XXRtmpPublish_native_1add_1target(JNIEnv *env, jobject instance, jstring url_) {
-    const char *url = env->GetStringUTFChars(url_, 0);
-
-    // TODO
-
-    env->ReleaseStringUTFChars(url_, url);
-}
-
-JNIEXPORT void JNICALL
 Java_com_mut0_xxcam_XXRtmpPublish_native_1connect(JNIEnv *env, jobject instance) {
 
     // TODO
+    rtmp->Connect();
 
 }
 
@@ -39,4 +33,22 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1disconnect(JNIEnv *env, jobject instan
 
     // TODO
 
+}
+
+JNIEXPORT void JNICALL
+Java_com_mut0_xxcam_XXFlvMux_nativeEatVideo(JNIEnv *env, jobject instance, jobject byteBuffer) {
+
+    // TODO
+    uint8_t *data = (uint8_t*) env->GetDirectBufferAddress(byteBuffer);
+
+
+}
+
+JNIEXPORT void JNICALL
+Java_com_mut0_xxcam_XXRtmpPublish_native_1addTarget(JNIEnv *env, jobject instance, jstring url_) {
+    const char *url = env->GetStringUTFChars(url_, 0);
+
+    // TODO
+
+    env->ReleaseStringUTFChars(url_, url);
 }

@@ -4,12 +4,24 @@
 
 #ifndef XXIPCAMERA_XXIO_H
 #define XXIPCAMERA_XXIO_H
+
+#include <string>
+#include "rtmp.h"
+
 class xxio {
 public:
     xxio();
     ~xxio();
 
-    int Connect();
+    static int Connect(std::string &address, XXRtmp *callback);
+
+    void loop();
+
+private:
+    bool quit;
+};
+
+class Connection {
 
 };
 #endif //XXIPCAMERA_XXIO_H

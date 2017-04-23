@@ -38,80 +38,10 @@ import java.nio.ByteBuffer;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-
     XXCamera cam0, cam1;
     int mCurrentCamera = 0;
 
     private static final int PERMISSION_REQUEST_CODE_CAMERA = 1;
-
-    private ImageReader.OnImageAvailableListener mJpegListener = new ImageReader.OnImageAvailableListener() {
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            Image image = reader.acquireNextImage();
-            boolean success = false;
-            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),"JPEG_" + System.currentTimeMillis() + ".jpg");
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            FileOutputStream output = null;
-            try {
-                output = new FileOutputStream(file);
-                output.write(bytes);
-                success = true;
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                image.close();
-                closeOutput(output);
-            }
-            // If saving the file succeeded, update MediaStore.
-            if (success) {
-                MediaScannerConnection.scanFile(getApplicationContext(), new String[]{file.getPath()},
-                /*mimeTypes*/null, new MediaScannerConnection.MediaScannerConnectionClient() {
-                            @Override
-                            public void onMediaScannerConnected() {
-                                // Do nothing
-                            }
-
-                            @Override
-                            public void onScanCompleted(String path, Uri uri) {
-                                Log.i(TAG, "Scanned " + path + ":");
-                                Log.i(TAG, "-> uri=" + uri);
-                                showToast(path);
-                            }
-                        });
-            }
-        }
-        private void showToast(String text) {
-            // We show a Toast by sending request message to mMessageHandler. This makes sure that the
-            // Toast is shown on the UI thread.
-            Message message = Message.obtain();
-            message.obj = text;
-            mMessageHandler.sendMessage(message);
-        }
-
-
-        /**
-         * A {@link Handler} for showing {@link Toast}s on the UI thread.
-         */
-        private final Handler mMessageHandler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                Toast.makeText(getApplicationContext(), (String) msg.obj, Toast.LENGTH_SHORT).show();
-            }
-        };
-
-        private void closeOutput(OutputStream outputStream) {
-            if (null != outputStream) {
-                try {
-                    outputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    };
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -149,8 +79,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void startCamera() {
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-
-
         {
             SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
             SurfaceHolder holder = surfaceView.getHolder();
@@ -226,4 +154,72 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+
+    private ImageReader.OnImageAvailableListener mJpegListener = new ImageReader.OnImageAvailableListener() {
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            Image image = reader.acquireNextImage();
+            boolean success = false;
+            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),"JPEG_" + System.currentTimeMillis() + ".jpg");
+            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            FileOutputStream output = null;
+            try {
+                output = new FileOutputStream(file);
+                output.write(bytes);
+                success = true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                image.close();
+                closeOutput(output);
+            }
+            // If saving the file succeeded, update MediaStore.
+            if (success) {
+                MediaScannerConnection.scanFile(getApplicationContext(), new String[]{file.getPath()},
+                /*mimeTypes*/null, new MediaScannerConnection.MediaScannerConnectionClient() {
+                            @Override
+                            public void onMediaScannerConnected() {
+                                // Do nothing
+                            }
+
+                            @Override
+                            public void onScanCompleted(String path, Uri uri) {
+                                Log.i(TAG, "Scanned " + path + ":");
+                                Log.i(TAG, "-> uri=" + uri);
+                                showToast(path);
+                            }
+                        });
+            }
+        }
+        private void showToast(String text) {
+            // We show a Toast by sending request message to mMessageHandler. This makes sure that the
+            // Toast is shown on the UI thread.
+            Message message = Message.obtain();
+            message.obj = text;
+            mMessageHandler.sendMessage(message);
+        }
+
+
+        /**
+         * A {@link Handler} for showing {@link Toast}s on the UI thread.
+         */
+        private final Handler mMessageHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                Toast.makeText(getApplicationContext(), (String) msg.obj, Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        private void closeOutput(OutputStream outputStream) {
+            if (null != outputStream) {
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
 }

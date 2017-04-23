@@ -17,10 +17,15 @@ import java.nio.ByteBuffer;
 
 public class XXVEncoder {
 
+    private static final String TAG = "XXVEncoder";
+    private final XXFlvMux muxer;
     private Surface surface;
     MediaCodec codec;
 
     public XXVEncoder() {
+         this(null);
+    }
+    public XXVEncoder(XXFlvMux muxer) {
         MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 640, 480);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_BIT_RATE, 40000);
@@ -29,20 +34,16 @@ public class XXVEncoder {
 
         MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
 
-//        String encoder_type = list.findEncoderForFormat(format);
-
         try {
             codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
-
             codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-
             surface = codec.createInputSurface();
-
             codec.setCallback(mediacodecCallback);
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        this.muxer = muxer;
     }
 
     Surface getSurface(){
@@ -61,27 +62,30 @@ public class XXVEncoder {
     MediaCodec.Callback mediacodecCallback = new MediaCodec.Callback() {
         @Override
         public void onInputBufferAvailable(@NonNull MediaCodec codec, int index) {
-            Log.d("xxxx", "onInputBufferAvailable "+index);
+            Log.d(TAG, "onInputBufferAvailable "+index);
         }
 
         @Override
         public void onOutputBufferAvailable(@NonNull MediaCodec codec, int index, @NonNull MediaCodec.BufferInfo info) {
             ByteBuffer byteBuffer = codec.getOutputBuffer(index);
-            Log.d("xxxx", "onOutputBufferAvailable "+index +" " +info.presentationTimeUs +" " + info.flags + " " + byteBuffer);
+            Log.d(TAG, "onOutputBufferAvailable "+index +" " +info.presentationTimeUs +" " + info.flags + " " + byteBuffer);
             if ( 1 == (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME)) {
 
             }
+
+            muxer.eatVideo(byteBuffer, info);
+
             codec.releaseOutputBuffer(index, false);
         }
 
         @Override
         public void onError(@NonNull MediaCodec codec, @NonNull MediaCodec.CodecException e) {
-            Log.d("xxxx", "onError ");
+            Log.d(TAG, "onError ");
         }
 
         @Override
         public void onOutputFormatChanged(@NonNull MediaCodec codec, @NonNull MediaFormat format) {
-            Log.d("xxxx", "onOutputFormatChanged " + format.toString());
+            Log.d(TAG, "onOutputFormatChanged " + format.toString());
         }
     };
 }
