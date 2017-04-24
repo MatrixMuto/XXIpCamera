@@ -26,6 +26,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.mut0.xxcam.XXCamera;
+import com.mut0.xxcam.XXRtmpPublish;
 
 import junit.framework.Assert;
 
@@ -41,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     XXCamera cam0, cam1;
     int mCurrentCamera = 0;
 
+
     private static final int PERMISSION_REQUEST_CODE_CAMERA = 1;
 
     @Override
@@ -48,6 +50,20 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        {
+            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+            SurfaceHolder holder = surfaceView.getHolder();
+            cam0 = new XXCamera(manager, holder, mJpegListener);
+            cam0.setJpegSize(new Size(4160,3120));
+        }
+        {
+            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView2);
+            SurfaceHolder holder =surfaceView.getHolder();
+            cam1 = new XXCamera(manager, holder, mJpegListener);
+            cam1.setJpegSize(new Size(1600, 1200));
+        }
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -78,20 +94,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startCamera() {
-        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
-            SurfaceHolder holder = surfaceView.getHolder();
-            cam0 = new XXCamera(manager, holder, mJpegListener);
-            cam0.setJpegSize(new Size(4160,3120));
-//            cam0.open("0");
-        }
-        {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView2);
-            SurfaceHolder holder =surfaceView.getHolder();
-            cam1 = new XXCamera(manager, holder, mJpegListener);
-            cam1.setJpegSize(new Size(1600, 1200));
-        }
+
         cam0.open("0");
         mCurrentCamera = 0;
 
@@ -127,6 +130,17 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+        Button btnPublish = (Button) findViewById(R.id.btnPublish);
+        btnPublish.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        XXRtmpPublish publish = new XXRtmpPublish();
+                        publish.connect();
+                    }
+                }
+        );
+
     }
 
     @Override

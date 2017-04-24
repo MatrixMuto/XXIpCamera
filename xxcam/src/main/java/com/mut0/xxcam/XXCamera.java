@@ -55,6 +55,7 @@ public class XXCamera {
     private static final int STATE_PICTURE_TAKEN = 4;
     private CaptureRequest mPreviewRequest;
     private ImageReader mJpegImageReader;
+    private Size mJpegSize;
 
     public XXCamera(CameraManager manager, SurfaceHolder holder) {
         this.manager = manager;
@@ -84,7 +85,7 @@ public class XXCamera {
             e.printStackTrace();
         }
     }
-    Size mJpegSize;
+
     public void setJpegSize(Size size) {
         mJpegSize = size;
     }
@@ -143,6 +144,8 @@ public class XXCamera {
             mJpegImageReader = null;
         }
 
+        surface = null;
+
         stopBackgroundThread();
     }
 
@@ -182,7 +185,7 @@ public class XXCamera {
             Log.d(TAG, "onOpened");
             mCameraDevice = camera;
 
-            if (!hodler.isCreating()) {
+            if (surface != null) {
                 startPreivew();
             }
         }
@@ -203,6 +206,7 @@ public class XXCamera {
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
             Log.d(TAG, "surfaceCreated");
+            surface = holder.getSurface();
             if (mCameraDevice != null) {
                 startPreivew();
             }

@@ -18,14 +18,14 @@ import java.nio.ByteBuffer;
 public class XXVEncoder {
 
     private static final String TAG = "XXVEncoder";
-    private final XXFlvMux muxer;
+    private final XXRtmpPublish rtmp;
     private Surface surface;
     MediaCodec codec;
 
     public XXVEncoder() {
          this(null);
     }
-    public XXVEncoder(XXFlvMux muxer) {
+    public XXVEncoder(XXRtmpPublish rtmp) {
         MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 640, 480);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_BIT_RATE, 40000);
@@ -43,7 +43,7 @@ public class XXVEncoder {
             e.printStackTrace();
         }
 
-        this.muxer = muxer;
+        this.rtmp = rtmp;
     }
 
     Surface getSurface(){
@@ -73,7 +73,9 @@ public class XXVEncoder {
 
             }
 
-            muxer.eatVideo(byteBuffer, info);
+            if (rtmp != null) {
+                rtmp.eatVideo(byteBuffer, info);
+            }
 
             codec.releaseOutputBuffer(index, false);
         }

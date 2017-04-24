@@ -15,18 +15,13 @@
 
 static XXRtmp *rtmp = new XXRtmp();
 
+extern "C" {
+
 JNIEXPORT jint JNICALL
 Java_com_mut0_xxcam_XXFlvMux_nativeTest(JNIEnv *env, jclass type) {
-
+    return 0;
 }
 
-JNIEXPORT void JNICALL
-Java_com_mut0_xxcam_XXRtmpPublish_native_1connect(JNIEnv *env, jobject instance) {
-
-    // TODO
-    rtmp->Connect();
-
-}
 
 JNIEXPORT void JNICALL
 Java_com_mut0_xxcam_XXRtmpPublish_native_1disconnect(JNIEnv *env, jobject instance) {
@@ -38,17 +33,30 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1disconnect(JNIEnv *env, jobject instan
 JNIEXPORT void JNICALL
 Java_com_mut0_xxcam_XXFlvMux_nativeEatVideo(JNIEnv *env, jobject instance, jobject byteBuffer) {
 
-    // TODO
-    uint8_t *data = (uint8_t*) env->GetDirectBufferAddress(byteBuffer);
+    uint8_t *data = (uint8_t *) env->GetDirectBufferAddress(byteBuffer);
 
-
+    rtmp->video(data);
 }
 
 JNIEXPORT void JNICALL
 Java_com_mut0_xxcam_XXRtmpPublish_native_1addTarget(JNIEnv *env, jobject instance, jstring url_) {
     const char *url = env->GetStringUTFChars(url_, 0);
 
-    // TODO
 
     env->ReleaseStringUTFChars(url_, url);
+}
+
+JNIEXPORT void JNICALL
+Java_com_mut0_xxcam_XXRtmpPublish_native_1eatVideo(JNIEnv *env, jobject instance,
+                                                   jobject byteBuffer) {
+    uint8_t *data = (uint8_t *) env->GetDirectBufferAddress(byteBuffer);
+
+    rtmp->video(data);
+}
+
+JNIEXPORT void JNICALL
+Java_com_mut0_xxcam_XXRtmpPublish_native_1connect(JNIEnv *env, jobject instance) {
+    rtmp->Connect();
+}
+
 }

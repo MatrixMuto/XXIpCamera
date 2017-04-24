@@ -6,23 +6,23 @@
 #include "xxio.h"
 
 XXRtmp::XXRtmp() {
-
+    io = new xxio();
 }
 
 XXRtmp::~XXRtmp() {
-
+    delete io;
 }
 
 int XXRtmp::Connect() {
+
+    io->start();
     std::string url = "rtmp://127.0.0.1:1935/live/test";
     //Connection conn = ;
-    xxio::Connect(url, this);
-
+    io->Connect(url, this);
 
     return 0;
 }
-//
-//int XXRtmp::IoCallback(){
-//
-//}
 
+void XXRtmp::video(uint8_t *data) {
+    io->Write(data);
+}

@@ -9,9 +9,7 @@ import java.nio.ByteBuffer;
  */
 
 public class XXFlvMux {
-    static {
-        System.loadLibrary("native-lib");
-    }
+
     public static native int nativeTest();
 
     public void eat(ByteBuffer byteBuffer) {

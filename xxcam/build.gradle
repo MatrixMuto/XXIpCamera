@@ -12,6 +12,12 @@ android {
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
+//        externalNativeBuild {
+//            ndkBuild {
+//                abiFilters 'armeabi-v7a'
+//            }
+//        }
+
     }
     buildTypes {
         release {

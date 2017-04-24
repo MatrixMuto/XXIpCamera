@@ -22,8 +22,4 @@ public class XXCommander {
 
     }
 
-
-    void data(ByteBuffer buf){
-
-    }
 }
