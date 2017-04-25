@@ -8,8 +8,8 @@
 
     <SurfaceView
         android:id="@+id/surfaceView"
-        android:layout_width="200dp"
-        android:layout_height="160dp"
+        android:layout_width="160dp"
+        android:layout_height="200dp"
         tools:layout_editor_absoluteX="12dp"
         tools:layout_editor_absoluteY="21dp"
         android:layout_alignParentTop="true"

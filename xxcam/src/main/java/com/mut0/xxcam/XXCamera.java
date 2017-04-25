@@ -259,7 +259,7 @@ public class XXCamera {
 
     };
 
-    ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+    private ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
             Image image = reader.acquireNextImage();
@@ -413,7 +413,7 @@ public class XXCamera {
         }
     }
 
-    CameraCaptureSession.CaptureCallback stillCaptureCallback_ = new CameraCaptureSession.CaptureCallback() {
+    private CameraCaptureSession.CaptureCallback stillCaptureCallback_ = new CameraCaptureSession.CaptureCallback() {
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                        @NonNull CaptureRequest request,

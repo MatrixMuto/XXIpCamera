@@ -10,6 +10,10 @@
 
 #include <sys/select.h>
 
+class event;
+
+typedef void (*event_handler_pt)(event *ev);
+
 class event {
 public:
     event();
@@ -17,9 +21,10 @@ public:
 public:
     int fd;
     int write;
-    void *handler;
+    event_handler_pt handler;
     int read;
     int index;
+    void *data;
 };
 
 class queue {
@@ -31,7 +36,7 @@ public:
     xxio();
     ~xxio();
 
-    int Connect(std::string &address, void *callback);
+    int Connect(std::string &address, event_handler_pt callback, void *data);
 
     static void* loop_enter(void*);
 
@@ -40,6 +45,8 @@ public:
     void start();
 
     int Write(uint8_t *string);
+
+    int Send(event *ev, uint8_t *string, size_t i);
 
 private:
     void AddSockFd(int fd);
@@ -66,6 +73,7 @@ private:
     void addEvent(event *pEvent);
 
     void deleteEvnet(event *ev);
+
 };
 
 class Connection {

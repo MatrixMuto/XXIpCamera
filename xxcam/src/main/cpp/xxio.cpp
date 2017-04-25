@@ -14,7 +14,6 @@
 #include <arpa/inet.h>
 
 #include <android/log.h>
-
 #define  LOG_TAG    "xxio"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
@@ -30,7 +29,7 @@ xxio::~xxio() {
 
 }
 
-int xxio::Connect(std::string &address, void *callback) {
+int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     int err, rc;
     int flags;
     struct sockaddr_in addr;
@@ -70,6 +69,7 @@ int xxio::Connect(std::string &address, void *callback) {
     }
 
     event *rev = new event();
+    rev->data = data;
     rev->fd = sockfd;
     rev->read = 1;
     rev->handler = callback;
@@ -79,6 +79,7 @@ int xxio::Connect(std::string &address, void *callback) {
     if (rc == -1) {
         /*EINPROGRESS*/
         event *wev = new event();
+        wev->data = data;
         wev->fd = sockfd;
         wev->write = 1;
         wev->handler = callback;
@@ -222,7 +223,7 @@ int xxio::process() {
 
         LOGI("processed event");
 
-//        ev->handler();
+        ev->handler(ev);
 
         deleteEvnet(ev);
     }
@@ -266,6 +267,42 @@ void xxio::deleteEvnet(event *ev) {
         e = events_[nevents_];
         events_[ev->index] = e;
         e->index = ev->index;
+    }
+}
+
+int xxio::Send(event *wev, uint8_t *buf, size_t size) {
+    ssize_t n;
+    int err;
+
+    for (;;) {
+        n = send(wev->fd, buf, size, 0);
+
+        if (n > 0) {
+
+            if (n < (ssize_t) size) {
+
+            }
+
+            return n;
+        }
+
+        err = errno;
+
+        if (n == 0) {
+
+            return 0;
+        }
+
+        if (err == EAGAIN || err == EINTR) {
+
+
+            if (err == EAGAIN) {
+                return -EAGAIN;
+            }
+
+        } else {
+            return -1;
+        }
     }
 }
 

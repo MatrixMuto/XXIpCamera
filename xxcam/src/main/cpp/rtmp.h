@@ -16,9 +16,14 @@ public:
     int Connect();
 
     void video(uint8_t *data);
-
+    static void Handshake(event *ev);
 private:
     xxio *io;
+
+
+    void handshake(event *ev);
+
+    int state_;
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H
