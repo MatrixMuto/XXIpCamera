@@ -12,11 +12,15 @@ android {
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
-//        externalNativeBuild {
-//            ndkBuild {
-//                abiFilters 'armeabi-v7a'
-//            }
-//        }
+        externalNativeBuild {
+            cmake {
+//                arguments '-DANDROID_PLATFORM=android-9',
+//                        '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=gnustl_static'
+            }
+            ndkBuild {
+                abiFilters 'armeabi-v7a'
+            }
+        }
 
     }
     buildTypes {
@@ -25,13 +29,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    // Encapsulates your external native build configurations.
     externalNativeBuild {
-
-        // Encapsulates your CMake build configurations.
         cmake {
-
-            // Provides a relative path to your CMake build script.
             path "CMakeLists.txt"
         }
     }

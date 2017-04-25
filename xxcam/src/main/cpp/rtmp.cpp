@@ -22,6 +22,11 @@ int XXRtmp::Connect() {
 
     return 0;
 }
+//
+//int XXRtmp::Send_C0_C1()
+//{
+//
+//}
 
 void XXRtmp::video(uint8_t *data) {
     io->Write(data);

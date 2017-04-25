@@ -19,6 +19,7 @@ public:
     int write;
     void *handler;
     int read;
+    int index;
 };
 
 class queue {
@@ -54,7 +55,7 @@ private:
     fd_set readset_out_;
     fd_set writeset_out_;
 
-    int maxfd_;
+    int max_fd_;
 
     event* events_[128];
     int nevents_;
@@ -63,6 +64,8 @@ private:
     int process();
 
     void addEvent(event *pEvent);
+
+    void deleteEvnet(event *ev);
 };
 
 class Connection {

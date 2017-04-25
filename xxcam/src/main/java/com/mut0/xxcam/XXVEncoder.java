@@ -25,6 +25,7 @@ public class XXVEncoder {
     public XXVEncoder() {
          this(null);
     }
+
     public XXVEncoder(XXRtmpPublish rtmp) {
         MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 640, 480);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
