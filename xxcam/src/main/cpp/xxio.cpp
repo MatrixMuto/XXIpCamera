@@ -13,11 +13,15 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 
+#ifdef ANDROID
 #include <android/log.h>
 #define  LOG_TAG    "xxio"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-
+#else
+#define  LOGI(...)  printf(__VA_ARGS__);printf("\n")
+#define  LOGE(...)  printf(__VA_ARGS__);printf("\n")
+#endif
 
 #define NGX_TIMER_INFINITE (-1)
 
@@ -34,6 +38,13 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     int flags;
     struct sockaddr_in addr;
     int sockfd;
+
+
+    FD_ZERO(&readset_in_);
+    FD_ZERO(&writeset_in_);
+
+    max_fd_ = -1;
+    nevents_ = 0;
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -54,7 +65,7 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     }
 
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("192.168.1.111");
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr.sin_port = htons(1935);
 
     rc = connect(sockfd, (struct sockaddr*)&addr, sizeof(addr));
@@ -68,23 +79,24 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
         }
     }
 
-    event *rev = new event();
-    rev->data = data;
-    rev->fd = sockfd;
-    rev->read = 1;
-    rev->handler = callback;
 
-    addEvent(rev);
+    sockfd_ = sockfd;
+
+    rev_ = new event();
+    rev_->data = data;
+    rev_->read = 1;
+    rev_->handler = callback;
+
+    addEvent(rev_);
 
     if (rc == -1) {
         /*EINPROGRESS*/
-        event *wev = new event();
-        wev->data = data;
-        wev->fd = sockfd;
-        wev->write = 1;
-        wev->handler = callback;
+        wev_ = new event();
+        wev_->data = data;
+        wev_->write = 1;
+        wev_->handler = callback;
 
-        addEvent(wev);
+        addEvent(wev_);
     }
 
     return 0;
@@ -118,13 +130,6 @@ void* xxio::loop_enter(void *data)
 }
 
 void xxio::start() {
-
-    FD_ZERO(&readset_in_);
-    FD_ZERO(&writeset_in_);
-
-    max_fd_ = -1;
-    nevents_ = 0;
-
     int err = pthread_create(&thread_, NULL,  loop_enter, this);
 }
 
@@ -141,8 +146,8 @@ int xxio::select(long timer) {
     if (max_fd_ == -1) {
         for (i = 0; i < nevents_; i++) {
             ev = events_[i];
-            if (max_fd_ < ev->fd) {
-                max_fd_ = ev->fd;
+            if (max_fd_ < sockfd_) {
+                max_fd_ = sockfd_;
             }
         }
 
@@ -188,18 +193,19 @@ int xxio::select(long timer) {
         found = 0;
 
         if (ev->write) {
-            if (FD_ISSET(ev->fd, &writeset_out_)){
+            if (FD_ISSET(sockfd_, &writeset_out_)) {
                 found = 1;
             }
         } else {
-            if (FD_ISSET(ev->fd, &readset_out_)){
+            if (FD_ISSET(sockfd_, &readset_out_)) {
                 found = 1;
             }
         }
 
         if (found) {
+            ev->ready = 1;
             queue_.push_back(ev);
-            LOGI("found %d ", ev->fd);
+            LOGI("found %d ", sockfd_);
             nready++;
         }
     }
@@ -224,8 +230,6 @@ int xxio::process() {
         LOGI("processed event");
 
         ev->handler(ev);
-
-        deleteEvnet(ev);
     }
     return 0;
 }
@@ -233,33 +237,39 @@ int xxio::process() {
 void xxio::addEvent(event *ev) {
 
     LOGI("ev %p nevents_ %d ", ev, nevents_);
-    LOGI("ev->fd %d ", ev->fd);
+    LOGI("ev->fd %d ", sockfd_);
 
     if (ev->write) {
-        FD_SET(ev->fd, &writeset_in_);
+        FD_SET(sockfd_, &writeset_in_);
     } else {
-        FD_SET(ev->fd, &readset_in_);
+        FD_SET(sockfd_, &readset_in_);
     }
 
-    if (ev->fd > max_fd_ ) {
-        max_fd_ = ev->fd;
-
+    if (max_fd_ != -1 && max_fd_ < sockfd_) {
+        max_fd_ = sockfd_;
     }
 
+
+    ev->active = 1;
+
+    events_[nevents_] = ev;
     ev->index = nevents_;
-
-    events_[nevents_++] = ev;
+    nevents_++;
 }
 
 void xxio::deleteEvnet(event *ev) {
+    LOGI("deleteEvnet");
     event *e;
+
+    ev->active = 0;
+
     if (ev->write) {
-        FD_CLR(ev->fd, &writeset_in_);
+        FD_CLR(sockfd_, &writeset_in_);
     } else {
-        FD_CLR(ev->fd, &readset_in_);
+        FD_CLR(sockfd_, &readset_in_);
     }
 
-    if (max_fd_ == ev->fd) {
+    if (max_fd_ == sockfd_) {
         max_fd_ = -1;
     }
 
@@ -275,7 +285,7 @@ int xxio::Send(event *wev, uint8_t *buf, size_t size) {
     int err;
 
     for (;;) {
-        n = send(wev->fd, buf, size, 0);
+        n = send(sockfd_, buf, size, 0);
 
         if (n > 0) {
 
@@ -306,11 +316,35 @@ int xxio::Send(event *wev, uint8_t *buf, size_t size) {
     }
 }
 
+void xxio::HandleWriteEvnet(int write) {
+    if (write) {
+        if (!wev_->ready && !wev_->active) {
+            addEvent(wev_);
+        }
 
-event::event() {
-
+        if (wev_->active && wev_->ready) {
+            deleteEvnet(wev_);
+        }
+    }
 }
 
-event::~event() {
-
+void xxio::SetWriteHandler(event_handler_pt fun, void *pRtmp) {
+    wev_->data = pRtmp;
+    wev_->handler = fun;
 }
+
+void xxio::SetReadHandler(event_handler_pt fun, void *pRtmp) {
+    rev_->data = pRtmp;
+    rev_->handler = fun;
+}
+
+ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
+    return 0;
+}
+
+void xxio::Close() {
+    quit_ = 1;
+}
+
+
+

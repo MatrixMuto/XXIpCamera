@@ -16,19 +16,24 @@ typedef void (*event_handler_pt)(event *ev);
 
 class event {
 public:
-    event();
-    ~event();
-public:
-    int fd;
     int write;
     event_handler_pt handler;
     int read;
     int index;
     void *data;
+    int active;
+    int ready;
 };
 
 class queue {
 
+};
+
+class xxconnection {
+public:
+
+private:
+    int fd_;
 };
 
 class xxio {
@@ -47,6 +52,20 @@ public:
     int Write(uint8_t *string);
 
     int Send(event *ev, uint8_t *string, size_t i);
+
+    void Wirte(event_handler_pt callback, void *data);
+
+    void HandleWriteEvnet(int i);
+
+    void SetReadHandler(event_handler_pt fun, void *pRtmp);
+
+    void SetWriteHandler(event_handler_pt fun, void *pRtmp);
+
+    void deleteEvnet(event *ev);
+
+    ssize_t Recv(event *rev, uint8_t *buf, size_t size);
+
+    void Close();
 
 private:
     void AddSockFd(int fd);
@@ -72,8 +91,9 @@ private:
 
     void addEvent(event *pEvent);
 
-    void deleteEvnet(event *ev);
 
+    event *wev_;
+    event *rev_;
 };
 
 class Connection {
