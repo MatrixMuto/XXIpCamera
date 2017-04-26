@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
-#include "rtmp.h"
+#include "xx_rtmp.h"
 
 static XXRtmp *rtmp = new XXRtmp();
 

@@ -16,6 +16,8 @@
 #include <unistd.h>
 #include <malloc.h>
 
+#include "xx_log.h"
+
 #define  XX_OK          0
 #define  XX_ERROR      -1
 #define  XX_AGAIN      -2

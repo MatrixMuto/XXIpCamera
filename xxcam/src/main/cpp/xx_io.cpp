@@ -2,8 +2,8 @@
 // Created by wq1950 on 17-4-18.
 //
 
-#include "xxio.h"
-#include "rtmp.h"
+#include "xx_io.h"
+#include "xx_rtmp.h"
 
 #include <netinet/in.h>
 #include <string>
@@ -12,16 +12,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
-
-#ifdef ANDROID
-#include <android/log.h>
-#define  LOG_TAG    "xxio"
-#define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-#else
-#define  LOGI(...)  printf(__VA_ARGS__);printf("\n")
-#define  LOGE(...)  printf(__VA_ARGS__);printf("\n")
-#endif
 
 #define NGX_TIMER_INFINITE (-1)
 

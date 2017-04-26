@@ -6,7 +6,7 @@
 #define XXIPCAMERA_XXIO_H
 
 
-#include "xxcore.h"
+#include "xx_core.h"
 
 class event;
 

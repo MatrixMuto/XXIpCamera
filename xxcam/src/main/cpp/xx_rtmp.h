@@ -5,9 +5,9 @@
 #ifndef XXIPCAMERA_RTMP_CPP_H
 #define XXIPCAMERA_RTMP_CPP_H
 
-#include "xxcore.h"
-#include "xxio.h"
-#include "xxbuf.h"
+#include "xx_core.h"
+#include "xx_io.h"
+#include "xx_buf.h"
 
 /* RTMP message types */
 #define NGX_RTMP_MSG_CHUNK_SIZE         1
@@ -72,7 +72,7 @@ private:
 
     int handshake_create_challenge(const u_char version[4]);
 
-    void SendChunkSize(int chunkSize);
+    void SendChunkSize(int chunksize);
 
     void send_message(xxbuf *pXxbuf);
 
@@ -86,6 +86,10 @@ private:
 
 
     void handle_rtmp_other_event();
+
+    void SendAckWindowSize(int ack_size);
+
+    void SendConnect();
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H

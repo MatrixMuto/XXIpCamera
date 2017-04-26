@@ -1,8 +1,8 @@
 #include <iostream>
 
 
-#include "../rtmp.h"
-#include "../xxio.h"
+#include "../xx_rtmp.h"
+#include "../xx_io.h"
 
 
 int main(int argc, char *argv[]) {

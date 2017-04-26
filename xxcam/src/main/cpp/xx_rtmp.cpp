@@ -3,28 +3,17 @@
 //
 
 #include <cstdlib>
-#include "rtmp.h"
-
-#ifdef ANDROID
-#include <android/log.h>
-#define  LOG_TAG    "xxio"
-#define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-#else
-#define  LOGI(...)  printf(__VA_ARGS__);printf("\n")
-#define  LOGE(...)  printf(__VA_ARGS__);printf("\n")
-#endif
+#include "xx_rtmp.h"
+#include "xx_amf.h"
 
 
 #define RTMP_HANDSHAKE_BUFSIZE                  1537
-
 
 #define NGX_RTMP_HANDSHAKE_SERVER_RECV_CHALLENGE    1
 #define NGX_RTMP_HANDSHAKE_SERVER_SEND_CHALLENGE    2
 #define NGX_RTMP_HANDSHAKE_SERVER_SEND_RESPONSE     3
 #define NGX_RTMP_HANDSHAKE_SERVER_RECV_RESPONSE     4
 #define NGX_RTMP_HANDSHAKE_SERVER_DONE              5
-
 
 #define NGX_RTMP_HANDSHAKE_CLIENT_SEND_CHALLENGE    6
 #define NGX_RTMP_HANDSHAKE_CLIENT_RECV_CHALLENGE    7
@@ -244,8 +233,8 @@ void XXRtmp::handshake_done() {
 
 //    rtmp_recv(io->read_);
     SendChunkSize(4096);
-//    SendWindowAckSize();
-//    SendAMF0("connect");
+    SendAckWindowSize(5000000);
+    SendConnect();
 
     rtmp_send(io->write_);
 }
@@ -275,7 +264,7 @@ void XXRtmp::rtmp_send(event *wev) {
             return;
         }
 
-
+        delete b;
         out.pop_front();
     }
 
@@ -287,7 +276,7 @@ void XXRtmp::rtmp_send(event *wev) {
 
 }
 
-void XXRtmp::SendChunkSize(int chunkSize) {
+void XXRtmp::SendChunkSize(int chunksize) {
     xxbuf *b;
     rtmp_header *h;
     u_char *p;
@@ -302,10 +291,35 @@ void XXRtmp::SendChunkSize(int chunkSize) {
     h->type = NGX_RTMP_MSG_CHUNK_SIZE;
     h->csid = 2;
 
-    *(b->last++) = ((u_char *) &chunkSize)[3];
-    *(b->last++) = ((u_char *) &chunkSize)[2];
-    *(b->last++) = ((u_char *) &chunkSize)[1];
-    *(b->last++) = ((u_char *) &chunkSize)[0];
+    *(b->last++) = ((u_char *) &chunksize)[3];
+    *(b->last++) = ((u_char *) &chunksize)[2];
+    *(b->last++) = ((u_char *) &chunksize)[1];
+    *(b->last++) = ((u_char *) &chunksize)[0];
+
+    prepare_message(h, NULL, b);
+
+    send_message(b);
+}
+
+void XXRtmp::SendAckWindowSize(int ack_size) {
+    xxbuf *b;
+    rtmp_header *h;
+    u_char *p;
+
+    h = new rtmp_header();
+
+    b = new xxbuf(8192);
+
+    b->pos += 20;
+    b->last = b->pos;
+
+    h->type = NGX_RTMP_MSG_ACK_SIZE;
+    h->csid = 2;
+
+    *(b->last++) = ((u_char *) &ack_size)[3];
+    *(b->last++) = ((u_char *) &ack_size)[2];
+    *(b->last++) = ((u_char *) &ack_size)[1];
+    *(b->last++) = ((u_char *) &ack_size)[0];
 
     prepare_message(h, NULL, b);
 
@@ -431,4 +445,120 @@ void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, xxbuf *buf) {
 
 void XXRtmp::handle_rtmp_other_event() {
 
+}
+
+void XXRtmp::SendConnect() {
+#if 0
+    static double trans = NGX_RTMP_RELAY_CONNECT_TRANS;
+    static double acodecs = 3575;
+    static double vcodecs = 252;
+
+    static ngx_rtmp_amf_elt_t out_cmd[] = {
+
+            {NGX_RTMP_AMF_STRING,
+                    ngx_string("app"),
+                    NULL,     0}, /* <-- fill */
+
+            {NGX_RTMP_AMF_STRING,
+                    ngx_string("tcUrl"),
+                    NULL,     0}, /* <-- fill */
+
+            {NGX_RTMP_AMF_STRING,
+                    ngx_string("pageUrl"),
+                    NULL,     0}, /* <-- fill */
+
+            {NGX_RTMP_AMF_STRING,
+                    ngx_string("swfUrl"),
+                    NULL,     0}, /* <-- fill */
+
+            {NGX_RTMP_AMF_STRING,
+                    ngx_string("flashVer"),
+                    NULL,     0}, /* <-- fill */
+
+            {NGX_RTMP_AMF_NUMBER,
+                    ngx_string("audioCodecs"),
+                    &acodecs, 0},
+
+            {NGX_RTMP_AMF_NUMBER,
+                    ngx_string("videoCodecs"),
+                    &vcodecs, 0}
+    };
+
+    static ngx_rtmp_amf_elt_t out_elts[] = {
+
+            {NGX_RTMP_AMF_STRING,
+                    ngx_null_string,
+                    "connect", 0},
+
+            {NGX_RTMP_AMF_NUMBER,
+                    ngx_null_string,
+                    &trans,    0},
+
+            {NGX_RTMP_AMF_OBJECT,
+                    ngx_null_string,
+                    out_cmd,   sizeof(out_cmd)}
+    };
+
+    rtmp_header h;
+    size_t len, url_len;
+    u_char *p, *url_end;
+
+    /* app */
+    if (ctx->app.len) {
+        out_cmd[0].data = ctx->app.data;
+        out_cmd[0].len = ctx->app.len;
+    } else {
+        out_cmd[0].data = cacf->name.data;
+        out_cmd[0].len = cacf->name.len;
+    }
+
+    /* tcUrl */
+    if (ctx->tc_url.len) {
+        out_cmd[1].data = ctx->tc_url.data;
+        out_cmd[1].len = ctx->tc_url.len;
+    } else {
+        len = sizeof("rtmp://") - 1 + ctx->url.len +
+              sizeof("/") - 1 + ctx->app.len;
+        p = ngx_palloc(s->connection->pool, len);
+        if (p == NULL) {
+            return NGX_ERROR;
+        }
+        out_cmd[1].data = p;
+        p = ngx_cpymem(p, "rtmp://", sizeof("rtmp://") - 1);
+
+        url_len = ctx->url.len;
+        url_end = ngx_strlchr(ctx->url.data, ctx->url.data + ctx->url.len, '/');
+        if (url_end) {
+            url_len = (size_t) (url_end - ctx->url.data);
+        }
+
+        p = ngx_cpymem(p, ctx->url.data, url_len);
+        *p++ = '/';
+        p = ngx_cpymem(p, ctx->app.data, ctx->app.len);
+        out_cmd[1].len = p - (u_char *) out_cmd[1].data;
+    }
+
+    /* pageUrl */
+    out_cmd[2].data = ctx->page_url.data;
+    out_cmd[2].len = ctx->page_url.len;
+
+    /* swfUrl */
+    out_cmd[3].data = ctx->swf_url.data;
+    out_cmd[3].len = ctx->swf_url.len;
+
+    /* flashVer */
+    if (ctx->flash_ver.len) {
+        out_cmd[4].data = ctx->flash_ver.data;
+        out_cmd[4].len = ctx->flash_ver.len;
+    } else {
+        out_cmd[4].data = NGX_RTMP_RELAY_FLASHVER;
+        out_cmd[4].len = sizeof(NGX_RTMP_RELAY_FLASHVER) - 1;
+    }
+
+    ngx_memzero(&h, sizeof(h));
+    h.csid = NGX_RTMP_RELAY_CSID_AMF_INI;
+    h.type = NGX_RTMP_MSG_AMF_CMD;
+
+    ngx_rtmp_send_amf(s, &h, out_elts, sizeof(out_elts) / sizeof(out_elts[0]));
+#endif
 }

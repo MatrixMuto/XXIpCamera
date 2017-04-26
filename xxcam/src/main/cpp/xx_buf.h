@@ -5,7 +5,7 @@
 #ifndef PROJECT_XXBUF_H
 #define PROJECT_XXBUF_H
 
-#include "xxcore.h"
+#include "xx_core.h"
 
 class xxbuf {
 public:
