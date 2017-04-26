@@ -7,16 +7,16 @@
 
 #ifdef ANDROID
 #include <android/log.h>
-    #define  LOG_TAG    "xxio"
-    #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-    #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#define  LOG_TAG    "xxio"
+#define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 #else
 #define  LOGI(...)  printf(__VA_ARGS__);printf("\n")
 #define  LOGE(...)  printf(__VA_ARGS__);printf("\n")
 #endif
 
 
-#define NGX_RTMP_HANDSHAKE_BUFSIZE                  1537
+#define RTMP_HANDSHAKE_BUFSIZE                  1537
 
 
 #define NGX_RTMP_HANDSHAKE_SERVER_RECV_CHALLENGE    1
@@ -73,7 +73,7 @@ void XXRtmp::SendChallenge() {
             0x00, 0x00, 0x00, 0x00
     };
 
-    hs_buf = new xxbuf(1537);
+    hs_buf = new xxbuf(RTMP_HANDSHAKE_BUFSIZE);
 
     handshake_create_challenge(ngx_rtmp_client_version);
 
@@ -84,7 +84,7 @@ void XXRtmp::SendChallenge() {
 
 void XXRtmp::OnConnect(event *ev) {
     LOGI("OnConnect r:%d w:%d", ev->read, ev->write);
-    XXRtmp *rtmp = (XXRtmp*) ev->data;
+    XXRtmp *rtmp = (XXRtmp *) ev->data;
 }
 
 void XXRtmp::HandshakeRecv(event *rev) {
@@ -110,6 +110,7 @@ void XXRtmp::RtmpRecv(event *rev) {
     XXRtmp *rtmp = (XXRtmp *) rev->data;
     rtmp->rtmp_recv(rev);
 }
+
 void XXRtmp::handshake_send(event *wev) {
 
     ssize_t n;
@@ -121,7 +122,7 @@ void XXRtmp::handshake_send(event *wev) {
             //fatal error, finalize session.
             LOGE("send return %ld", n);
             io->Close();
-            return ;
+            return;
         }
 
         if (n == XX_AGAIN || n == 0) {
@@ -242,7 +243,7 @@ void XXRtmp::handshake_done() {
     io->SetWriteHandler(RtmpSend, this);
 
 //    rtmp_recv(io->read_);
-//    rtmp_SetChunkSize();
+    SendChunkSize(4096);
 //    SendWindowAckSize();
 //    SendAMF0("connect");
 
@@ -258,8 +259,176 @@ void XXRtmp::rtmp_recv(event *rev) {
 }
 
 void XXRtmp::rtmp_send(event *wev) {
+    xxbuf *b;
+    ssize_t n;
 
     while (!out.empty()) {
+        b = out.front();
+        n = io->Send(wev, b->pos, b->last - b->pos);
 
+        if (n == XX_AGAIN || n == 0) {
+
+            return;
+        }
+
+        if (n < 0) {
+            return;
+        }
+
+
+        out.pop_front();
     }
+
+    if (wev->active) {
+        io->deleteEvnet(wev);
+    }
+
+    handle_rtmp_other_event();
+
+}
+
+void XXRtmp::SendChunkSize(int chunkSize) {
+    xxbuf *b;
+    rtmp_header *h;
+    u_char *p;
+
+    h = new rtmp_header();
+
+    b = new xxbuf(8192);
+
+    b->pos += 20;
+    b->last = b->pos;
+
+    h->type = NGX_RTMP_MSG_CHUNK_SIZE;
+    h->csid = 2;
+
+    *(b->last++) = ((u_char *) &chunkSize)[3];
+    *(b->last++) = ((u_char *) &chunkSize)[2];
+    *(b->last++) = ((u_char *) &chunkSize)[1];
+    *(b->last++) = ((u_char *) &chunkSize)[0];
+
+    prepare_message(h, NULL, b);
+
+    send_message(b);
+}
+
+void XXRtmp::send_message(xxbuf *b) {
+    out.push_back(b);
+}
+
+void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, xxbuf *buf) {
+
+    u_char *p, *pp;//= buf->pos;
+    uint8_t fmt;
+    uint32_t mlen, timestamp, ext_timestamp;
+    static uint8_t hdrsize[] = {12, 8, 4, 1}; /* basic + message */
+    int hsize, thsize;
+    u_char th[7];
+
+
+
+    /* detect packet size */
+    mlen = 0;
+//    nbufs = 0;
+//    for(l = out; l; l = l->next) {
+//        mlen += (l->buf->last - l->buf->pos);
+//        ++nbufs;
+//    }
+
+    mlen += (buf->last - buf->pos);
+
+    fmt = 0;
+    if (lh) {
+        /* message's 2,3,... chunk */
+    } else {
+        timestamp = h->timestamp;
+    }
+
+    hsize = hdrsize[fmt];
+
+    ext_timestamp = 0;
+    if (timestamp >= 0x00ffffff) {
+        ext_timestamp = timestamp;
+        timestamp = 0x00ffffff;
+        hsize += 4;
+    }
+
+    if (h->csid >= 64) {
+        ++hsize;
+        if (h->csid >= 320) {
+            ++hsize;
+        }
+    }
+
+    buf->pos -= hsize;
+    p = buf->pos;
+
+    /* basic header */
+    *p = (fmt << 6);
+    if (h->csid >= 2 && h->csid <= 63) {
+        *p++ |= (((uint8_t) h->csid) & 0x3f);
+    } else if (h->csid >= 64 && h->csid < 320) {
+        ++p;
+        *p++ = (uint8_t) (h->csid - 64);
+    } else {
+        *p++ |= 1;
+        *p++ = (uint8_t) (h->csid - 64);
+        *p++ = (uint8_t) ((h->csid - 64) >> 8);
+    }
+
+    /* create fmt3 header for successive fragments */
+    thsize = p - buf->pos;
+    memcpy(th, buf->pos, thsize);
+    th[0] |= 0xc0;
+
+    /* message header */
+    if (fmt <= 2) {
+        pp = (u_char *) &timestamp;
+        *p++ = pp[2];
+        *p++ = pp[1];
+        *p++ = pp[0];
+        if (fmt <= 1) {
+            pp = (u_char *) &mlen;
+            *p++ = pp[2];
+            *p++ = pp[1];
+            *p++ = pp[0];
+            *p++ = h->type;
+            if (fmt == 0) {
+                pp = (u_char *) &h->msid;
+                *p++ = pp[0];
+                *p++ = pp[1];
+                *p++ = pp[2];
+                *p++ = pp[3];
+            }
+        }
+    }
+
+    /* extended header */
+    if (ext_timestamp) {
+        pp = (u_char *) &ext_timestamp;
+        *p++ = pp[3];
+        *p++ = pp[2];
+        *p++ = pp[1];
+        *p++ = pp[0];
+
+        /* This CONTRADICTS the standard
+         * but that's the way flash client
+         * wants data to be encoded;
+         * ffmpeg complains */
+//        if (cscf->play_time_fix) {
+//            ngx_memcpy(&th[thsize], p - 4, 4);
+//            thsize += 4;
+//        }
+    }
+
+//    /* append headers to successive fragments */
+//    for(out = out->next; out; out = out->next) {
+//        out->buf->pos -= thsize;
+//        memcpy(out->buf->pos, th, thsize);
+//    }
+
+}
+
+void XXRtmp::handle_rtmp_other_event() {
+
 }
