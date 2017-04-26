@@ -5,10 +5,8 @@
 #ifndef XXIPCAMERA_XXIO_H
 #define XXIPCAMERA_XXIO_H
 
-#include <string>
-#include <deque>
 
-#include <sys/select.h>
+#include "xxcore.h"
 
 class event;
 
@@ -23,6 +21,8 @@ public:
     void *data;
     int active;
     int ready;
+    int eof;
+    int error;
 };
 
 class queue {
@@ -70,7 +70,14 @@ public:
 private:
     void AddSockFd(int fd);
 
+    int process();
+
+    void addEvent(event *pEvent);
     int Read();
+
+public:
+    event *write_;
+    event *read_;
 private:
     bool quit_;
     pthread_t thread_;
@@ -87,13 +94,7 @@ private:
     int nevents_;
     std::deque<event*> queue_;
 
-    int process();
 
-    void addEvent(event *pEvent);
-
-
-    event *wev_;
-    event *rev_;
 };
 
 class Connection {

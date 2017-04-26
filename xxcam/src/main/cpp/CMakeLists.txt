@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4.1)
 
-set(SOURCE rtmp.cpp xxio.cpp)
+set(SOURCE rtmp.cpp xxio.cpp xxbuf.cpp amf.cpp)
 #set(SOURCE ${SOURCE} native-lib.cpp)
 
 add_library(native-lib SHARED ${SOURCE})

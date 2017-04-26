@@ -82,21 +82,21 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
 
     sockfd_ = sockfd;
 
-    rev_ = new event();
-    rev_->data = data;
-    rev_->read = 1;
-    rev_->handler = callback;
+    read_ = new event();
+    read_->data = data;
+    read_->read = 1;
+    read_->handler = callback;
 
-    addEvent(rev_);
+    addEvent(read_);
 
     if (rc == -1) {
         /*EINPROGRESS*/
-        wev_ = new event();
-        wev_->data = data;
-        wev_->write = 1;
-        wev_->handler = callback;
+        write_ = new event();
+        write_->data = data;
+        write_->write = 1;
+        write_->handler = callback;
 
-        addEvent(wev_);
+        addEvent(write_);
     }
 
     return 0;
@@ -316,31 +316,70 @@ int xxio::Send(event *wev, uint8_t *buf, size_t size) {
     }
 }
 
-void xxio::HandleWriteEvnet(int write) {
-    if (write) {
-        if (!wev_->ready && !wev_->active) {
-            addEvent(wev_);
+ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
+    ssize_t n;
+    int err;
+
+    do {
+        n = recv(sockfd_, buf, size, 0);
+
+        if (n == 0) {
+            rev->ready = 0;
+            rev->eof = 1;
+            LOGE("recv return 0");
+            return 0;
         }
 
-        if (wev_->active && wev_->ready) {
-            deleteEvnet(wev_);
+        if (n > 0) {
+            if ((size_t) n < size) {
+                rev->ready = 0;
+            }
+
+            return n;
+        }
+
+        err = errno;
+        if (err == EAGAIN || err == EINTR) {
+
+            n = XX_AGAIN;
+        } else {
+            n = XX_ERROR;
+            break;
+        }
+
+    } while (err == EINTR);
+
+    rev->ready = 0;
+
+    if (n == XX_ERROR) {
+        rev->error = 1;
+    }
+
+    return n;
+}
+
+void xxio::HandleWriteEvnet(int write) {
+    if (write) {
+        if (!write_->ready && !write_->active) {
+            addEvent(write_);
+        }
+
+        if (write_->active && write_->ready) {
+            deleteEvnet(write_);
         }
     }
 }
 
 void xxio::SetWriteHandler(event_handler_pt fun, void *pRtmp) {
-    wev_->data = pRtmp;
-    wev_->handler = fun;
+    write_->data = pRtmp;
+    write_->handler = fun;
 }
 
 void xxio::SetReadHandler(event_handler_pt fun, void *pRtmp) {
-    rev_->data = pRtmp;
-    rev_->handler = fun;
+    read_->data = pRtmp;
+    read_->handler = fun;
 }
 
-ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
-    return 0;
-}
 
 void xxio::Close() {
     quit_ = 1;
