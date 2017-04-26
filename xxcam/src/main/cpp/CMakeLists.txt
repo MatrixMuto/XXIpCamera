@@ -10,5 +10,5 @@ set(SOURCE rtmp.cpp xxio.cpp xxbuf.cpp amf.cpp)
 add_library(native-lib SHARED ${SOURCE})
 target_link_libraries(native-lib pthread)
 
-add_executable(native-test test.cpp)
+add_executable(native-test test/test.cpp)
 target_link_libraries(native-test native-lib)
