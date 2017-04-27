@@ -65,9 +65,8 @@ void XXRtmp::handshake_send(event *wev) {
         n = io->Send(wev, b->pos, b->last - b->pos);
 
         if (n == XX_ERROR) {
-            //fatal error, finalize session.
             LOGE("send return %ld", n);
-            io->Close();
+            FiniliazeSession();
             return;
         }
 

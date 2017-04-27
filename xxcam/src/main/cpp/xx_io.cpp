@@ -5,13 +5,7 @@
 #include "xx_io.h"
 #include "xx_rtmp.h"
 
-#include <netinet/in.h>
-#include <string>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <arpa/inet.h>
+#
 
 #define NGX_TIMER_INFINITE (-1)
 
@@ -44,13 +38,11 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     }
 
     /* Set socket to non-blocking */
-    if ((flags = fcntl(sockfd, F_GETFL, 0)) < 0)
-    {
+    if ((flags = fcntl(sockfd, F_GETFL, 0)) < 0) {
         /* Handle error */
     }
 
-    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0)
-    {
+    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
         /* Handle error */
     }
 
@@ -58,10 +50,10 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr.sin_port = htons(1935);
 
-    rc = connect(sockfd, (struct sockaddr*)&addr, sizeof(addr));
+    rc = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));
     if (rc == -1) {
         err = errno;
-        if (err != EAGAIN && err != EINPROGRESS){
+        if (err != EAGAIN && err != EINPROGRESS) {
             LOGE("connect err %d", err);
 
             close(sockfd);
@@ -92,25 +84,22 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     return 0;
 }
 
-int xxio::Write(uint8_t *string)
-{
+int xxio::Write(uint8_t *string) {
     return 0;
 }
 
-int xxio::Read()
-{
+int xxio::Read() {
     return 0;
 }
 
-void* xxio::loop_enter(void *data)
-{
-    xxio *io = (xxio*) data;
-    int err ;
-    for(;;) {
+void *xxio::loop_enter(void *data) {
+    xxio *io = (xxio *) data;
+    int err;
+    for (;;) {
 
         err = io->process();
 
-        err = io->Select(1000);
+        err = io->Select(5000);
 
         if (err) {
             break;
@@ -120,14 +109,14 @@ void* xxio::loop_enter(void *data)
 }
 
 void xxio::start() {
-    int err = pthread_create(&thread_, NULL,  loop_enter, this);
+    int err = pthread_create(&thread_, NULL, loop_enter, this);
 }
 
 int xxio::Select(long timer) {
     int err = 0;
     int ready, i;
     int found, nready = 0;
-    struct timeval     tv, *tp;
+    struct timeval tv, *tp;
     event *ev;
     if (quit_) {
         return 1;
@@ -141,7 +130,7 @@ int xxio::Select(long timer) {
             }
         }
 
-        LOGI("max fd is %d", max_fd_);
+//        LOGI("max fd is %d", max_fd_);
 
     }
 
@@ -158,7 +147,7 @@ int xxio::Select(long timer) {
     writeset_out_ = writeset_in_;
     ready = ::select(max_fd_ + 1, &readset_out_, &writeset_out_, NULL, tp);
 
-    err = ready ==-1 ? errno : 0;
+    err = ready == -1 ? errno : 0;
 
     if (err) {
         if (err == EBADF) {
@@ -168,7 +157,7 @@ int xxio::Select(long timer) {
         return err;
     }
 
-    if ( ready == 0) {
+    if (ready == 0) {
         /* timeout */
         LOGI("timeout timer %ldms", timer);
         if (timer != NGX_TIMER_INFINITE) {
@@ -226,8 +215,7 @@ int xxio::process() {
 
 void xxio::addEvent(event *ev) {
 
-    LOGI("ev %p nevents_ %d ", ev, nevents_);
-    LOGI("ev->fd %d ", sockfd_);
+    LOGI("addEvent ev %p nevents_ %d fd %d", ev, nevents_, sockfd_);
 
     if (ev->write) {
         FD_SET(sockfd_, &writeset_in_);
@@ -238,7 +226,6 @@ void xxio::addEvent(event *ev) {
     if (max_fd_ != -1 && max_fd_ < sockfd_) {
         max_fd_ = sockfd_;
     }
-
 
     ev->active = 1;
 
@@ -263,7 +250,7 @@ void xxio::deleteEvnet(event *ev) {
         max_fd_ = -1;
     }
 
-    if (ev->index < --nevents_){
+    if (ev->index < --nevents_) {
         e = events_[nevents_];
         events_[ev->index] = e;
         e->index = ev->index;
@@ -334,6 +321,7 @@ ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
             n = XX_AGAIN;
         } else {
             n = XX_ERROR;
+            LOGE("io recv error %d", err);
             break;
         }
 
@@ -376,6 +364,7 @@ void xxio::Close() {
 }
 
 void xxio::HandleReadEvnet(int i) {
+    LOGI("HandleReadEvnet ready %d active %d", read_->ready, read_->active);
     if (!read_->ready && !read_->active) {
         addEvent(read_);
     }

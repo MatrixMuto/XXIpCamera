@@ -8,6 +8,7 @@
 #include "xx_core.h"
 #include "xx_io.h"
 #include "xx_amf.h"
+#include "xx_stream.h"
 
 /* RTMP message types */
 #define NGX_RTMP_MSG_CHUNK_SIZE         1
@@ -28,17 +29,11 @@
 #define NGX_RTMP_MSG_AGGREGATE          22
 #define NGX_RTMP_MSG_MAX                22
 
-class rtmp_header {
-public:
-    uint8_t type;
-    uint32_t timestamp;
-    uint32_t csid;
-    uint32_t msid;
-};
 
 class XXRtmp {
 public:
     XXRtmp();
+
     ~XXRtmp();
 
     int CreateSession();
@@ -61,6 +56,7 @@ private:
     void SendChallenge();
 
     void handshake_send(event *ev);
+
     void handshake_recv(event *rev);
 
     void handshake_done();
@@ -68,6 +64,7 @@ private:
     void fill_random_buffer(xxbuf *b);
 
     void rtmp_send(event *wev);
+
     void rtmp_recv(event *rev);
 
     int create_response();
@@ -95,7 +92,14 @@ private:
     int epoch;
     std::list<xxbuf *> out;
 
+    xx_stream *in_streams;
+    int in_csid;
+
     void FiniliazeSession();
+
+    int in_chunk_size;
+
+    int receive_message();
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H

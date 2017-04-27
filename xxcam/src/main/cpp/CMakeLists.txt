@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4.1)
 project(XXRtmp)
-set(SOURCE xx_rtmp.cpp xx_io.cpp xx_buf.cpp xx_amf.cpp xx_pool.cpp xx_pool.h xx_rtmp_handshake.cpp)
+set(SOURCE xx_rtmp.cpp xx_io.cpp xx_buf.cpp xx_amf.cpp xx_pool.cpp xx_pool.h xx_handshake.cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fpermissive")
 #set(SOURCE ${SOURCE} native-lib.cpp)
 #add_library(native-lib SHARED ${SOURCE})
