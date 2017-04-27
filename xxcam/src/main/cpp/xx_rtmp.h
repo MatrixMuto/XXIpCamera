@@ -30,10 +30,10 @@
 #define NGX_RTMP_MSG_MAX                22
 
 
+
 class XXRtmp {
 public:
     XXRtmp();
-
     ~XXRtmp();
 
     int CreateSession();
@@ -56,7 +56,6 @@ private:
     void SendChallenge();
 
     void handshake_send(event *ev);
-
     void handshake_recv(event *rev);
 
     void handshake_done();
@@ -64,7 +63,6 @@ private:
     void fill_random_buffer(xxbuf *b);
 
     void rtmp_send(event *wev);
-
     void rtmp_recv(event *rev);
 
     int create_response();
