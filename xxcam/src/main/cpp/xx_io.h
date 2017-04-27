@@ -45,7 +45,7 @@ public:
 
     static void* loop_enter(void*);
 
-    int select(long timer);
+    int Select(long timer);
 
     void start();
 
@@ -66,6 +66,8 @@ public:
     ssize_t Recv(event *rev, uint8_t *buf, size_t size);
 
     void Close();
+
+    void HandleReadEvnet(int i);
 
 private:
     void AddSockFd(int fd);

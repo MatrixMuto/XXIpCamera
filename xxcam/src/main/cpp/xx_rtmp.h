@@ -7,7 +7,7 @@
 
 #include "xx_core.h"
 #include "xx_io.h"
-#include "xx_buf.h"
+#include "xx_amf.h"
 
 /* RTMP message types */
 #define NGX_RTMP_MSG_CHUNK_SIZE         1
@@ -41,7 +41,7 @@ public:
     XXRtmp();
     ~XXRtmp();
 
-    int Connect();
+    int CreateSession();
 
     void video(uint8_t *data);
 
@@ -54,6 +54,8 @@ public:
     static void RtmpSend(event *wev);
 
     static void RtmpRecv(event *rev);
+
+    static ngx_chain_t *alloc_amf_buf(void *arg);
 
 private:
     void SendChallenge();
@@ -74,22 +76,26 @@ private:
 
     void SendChunkSize(int chunksize);
 
-    void send_message(xxbuf *pXxbuf);
-
-    void prepare_message(rtmp_header *h, rtmp_header *lh, xxbuf *buf);
-private:
-    xxio *io;
-    xxbuf *hs_buf;
-    int state_;
-    int epoch;
-    std::deque<xxbuf *> out;
-
+    void prepare_message(rtmp_header *h, rtmp_header *lh, std::list<xxbuf *> &out);
 
     void handle_rtmp_other_event();
 
     void SendAckWindowSize(int ack_size);
 
     void SendConnect();
+
+    void send_amf(rtmp_header *pHeader, XXAmf *amf);
+
+    void send_message(std::list<xxbuf *> &out2);
+
+private:
+    xxio *io;
+    xxbuf *hs_buf;
+    int state_;
+    int epoch;
+    std::list<xxbuf *> out;
+
+    void FiniliazeSession();
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H

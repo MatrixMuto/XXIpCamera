@@ -11,6 +11,7 @@ class xxbuf {
 public:
     xxbuf(size_t capbity);
 
+    xxbuf(XXPool *pool);
     ~xxbuf();
 
 public:

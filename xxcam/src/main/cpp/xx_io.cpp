@@ -110,7 +110,7 @@ void* xxio::loop_enter(void *data)
 
         err = io->process();
 
-        err = io->select(1000);
+        err = io->Select(1000);
 
         if (err) {
             break;
@@ -123,7 +123,7 @@ void xxio::start() {
     int err = pthread_create(&thread_, NULL,  loop_enter, this);
 }
 
-int xxio::select(long timer) {
+int xxio::Select(long timer) {
     int err = 0;
     int ready, i;
     int found, nready = 0;
@@ -373,6 +373,16 @@ void xxio::SetReadHandler(event_handler_pt fun, void *pRtmp) {
 
 void xxio::Close() {
     quit_ = 1;
+}
+
+void xxio::HandleReadEvnet(int i) {
+    if (!read_->ready && !read_->active) {
+        addEvent(read_);
+    }
+
+    if (read_->active && read_->ready) {
+        deleteEvnet(read_);
+    }
 }
 
 

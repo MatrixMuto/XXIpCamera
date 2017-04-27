@@ -8,7 +8,7 @@
 int main(int argc, char *argv[]) {
     XXRtmp *rtmp = new XXRtmp();
 
-    rtmp->Connect();
+    rtmp->CreateSession();
     char c;
     while (c = getchar()) {
 

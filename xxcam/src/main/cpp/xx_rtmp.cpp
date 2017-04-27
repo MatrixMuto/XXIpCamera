@@ -2,24 +2,20 @@
 // Created by wq1950 on 17-4-18.
 //
 
-#include <cstdlib>
+
 #include "xx_rtmp.h"
 #include "xx_amf.h"
 
 
-#define RTMP_HANDSHAKE_BUFSIZE                  1537
+#define NGX_RTMP_RELAY_FLASHVER                 "LNX.11,1,102,55"
 
-#define NGX_RTMP_HANDSHAKE_SERVER_RECV_CHALLENGE    1
-#define NGX_RTMP_HANDSHAKE_SERVER_SEND_CHALLENGE    2
-#define NGX_RTMP_HANDSHAKE_SERVER_SEND_RESPONSE     3
-#define NGX_RTMP_HANDSHAKE_SERVER_RECV_RESPONSE     4
-#define NGX_RTMP_HANDSHAKE_SERVER_DONE              5
+#define NGX_RTMP_RELAY_CONNECT_TRANS            1
+#define NGX_RTMP_RELAY_CREATE_STREAM_TRANS      2
 
-#define NGX_RTMP_HANDSHAKE_CLIENT_SEND_CHALLENGE    6
-#define NGX_RTMP_HANDSHAKE_CLIENT_RECV_CHALLENGE    7
-#define NGX_RTMP_HANDSHAKE_CLIENT_RECV_RESPONSE     8
-#define NGX_RTMP_HANDSHAKE_CLIENT_SEND_RESPONSE     9
-#define NGX_RTMP_HANDSHAKE_CLIENT_DONE              10
+
+#define NGX_RTMP_RELAY_CSID_AMF_INI             3
+#define NGX_RTMP_RELAY_CSID_AMF                 5
+#define NGX_RTMP_RELAY_MSID                     1
 
 XXRtmp::XXRtmp() {
     io = new xxio();
@@ -29,7 +25,7 @@ XXRtmp::~XXRtmp() {
     delete io;
 }
 
-int XXRtmp::Connect() {
+int XXRtmp::CreateSession() {
     std::string url = "rtmp://127.0.0.1:1935/live/test";
 
     io->Connect(url, OnConnect, this);
@@ -41,32 +37,12 @@ int XXRtmp::Connect() {
     return 0;
 }
 
-void XXRtmp::video(uint8_t *data) {
-    io->Write(data);
+void XXRtmp::FiniliazeSession() {
+
 }
 
-void XXRtmp::SendChallenge() {
-    /* Set io the handler*/
-    io->SetReadHandler(HandshakeRecv, this);
-    io->SetWriteHandler(HandshakeSend, this);
-
-
-    state_ = NGX_RTMP_HANDSHAKE_CLIENT_SEND_CHALLENGE;
-
-//    static const u_char
-//            ngx_rtmp_client_version[4] = {
-//            0x0C, 0x00, 0x0D, 0x0E
-//    };
-    static const u_char
-            ngx_rtmp_client_version[4] = {
-            0x00, 0x00, 0x00, 0x00
-    };
-
-    hs_buf = new xxbuf(RTMP_HANDSHAKE_BUFSIZE);
-
-    handshake_create_challenge(ngx_rtmp_client_version);
-
-    io->HandleWriteEvnet(1);
+void XXRtmp::video(uint8_t *data) {
+    io->Write(data);
 }
 
 /* Callback from io thread. */
@@ -74,18 +50,6 @@ void XXRtmp::SendChallenge() {
 void XXRtmp::OnConnect(event *ev) {
     LOGI("OnConnect r:%d w:%d", ev->read, ev->write);
     XXRtmp *rtmp = (XXRtmp *) ev->data;
-}
-
-void XXRtmp::HandshakeRecv(event *rev) {
-    LOGI("HandshakeRecv");
-    XXRtmp *rtmp = (XXRtmp *) rev->data;
-    rtmp->handshake_recv(rev);
-}
-
-void XXRtmp::HandshakeSend(event *wev) {
-    LOGI("HandshakeSend");
-    XXRtmp *rtmp = (XXRtmp *) wev->data;
-    rtmp->handshake_send(wev);
 }
 
 void XXRtmp::RtmpSend(event *wev) {
@@ -100,130 +64,7 @@ void XXRtmp::RtmpRecv(event *rev) {
     rtmp->rtmp_recv(rev);
 }
 
-void XXRtmp::handshake_send(event *wev) {
 
-    ssize_t n;
-    xxbuf *b = hs_buf;
-    while (b->pos != b->last) {
-        n = io->Send(wev, b->pos, b->last - b->pos);
-
-        if (n == XX_ERROR) {
-            //fatal error, finalize session.
-            LOGE("send return %ld", n);
-            io->Close();
-            return;
-        }
-
-        if (n == XX_AGAIN || n == 0) {
-            LOGE("send return %ld", n);
-            return;
-        }
-        b->pos += n;
-    }
-
-    if (wev->active) {
-        io->deleteEvnet(wev);
-    }
-
-    ++state_;
-
-    switch (state_) {
-        case NGX_RTMP_HANDSHAKE_CLIENT_RECV_CHALLENGE:
-            hs_buf->pos = hs_buf->last = hs_buf->start;
-            handshake_recv(io->read_);
-            break;
-        case NGX_RTMP_HANDSHAKE_CLIENT_DONE:
-            handshake_done();
-            break;
-    }
-}
-
-void XXRtmp::handshake_recv(event *rev) {
-
-    ssize_t n;
-    xxbuf *b = hs_buf;
-
-    while (b->last != b->end) {
-        n = io->Recv(rev, b->last, b->end - b->last);
-
-        if (n == XX_ERROR || n == 0) {
-            //ngx_rtmp_finalize_session(s);
-            LOGI("error , handshake_recv");
-            io->Close();
-            return;
-        }
-
-        if (n == XX_AGAIN) {
-//            ngx_add_timer(rev, s->timeout);
-//            if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
-//                ngx_rtmp_finalize_session(s);
-//            }
-            LOGI("read again");
-            return;
-        }
-
-        b->last += n;
-    }
-
-    if (rev->active) {
-        io->deleteEvnet(rev);
-    }
-
-    ++state_;
-
-    switch (state_) {
-        case NGX_RTMP_HANDSHAKE_CLIENT_RECV_RESPONSE:
-            hs_buf->pos = hs_buf->last = hs_buf->start + 1;
-            handshake_recv(rev); // go to recv S2
-            break;
-        case NGX_RTMP_HANDSHAKE_CLIENT_SEND_RESPONSE:
-            create_response();
-            handshake_send(io->write_); //go to send C2
-            break;
-    }
-}
-
-void XXRtmp::fill_random_buffer(xxbuf *b) {
-    for (; b->last != b->end; ++b->last) {
-        *b->last = (u_char) rand();
-    }
-}
-
-int XXRtmp::handshake_create_challenge(const u_char version[4]) {
-    xxbuf *b;
-    b = hs_buf;
-    b->last = b->pos = b->start;
-    *b->last++ = '\x03';
-    b->last = xx_cpymem(b->last, &epoch, 4);
-    b->last = xx_cpymem(b->last, version, 4);
-    fill_random_buffer(b);
-//    ++b->pos;
-//    if (ngx_rtmp_write_digest(b, key, 0, s->connection->log) != NGX_OK) {
-//        return NGX_ERROR;
-//    }
-//    --b->pos;
-    return XX_OK;
-}
-
-
-int XXRtmp::create_response() {
-    xxbuf *b;
-    u_char *p;
-
-    b = hs_buf;
-    b->pos = b->last = b->start + 1;
-    fill_random_buffer(b);
-//    if (s->hs_digest) {
-//        p = b->last - NGX_RTMP_HANDSHAKE_KEYLEN;
-//        key.data = s->hs_digest;
-//        key.len = NGX_RTMP_HANDSHAKE_KEYLEN;
-//        if (ngx_rtmp_make_digest(&key, b, p, p, s->connection->log) != NGX_OK) {
-//            return NGX_ERROR;
-//        }
-//    }
-
-    return XX_OK;
-}
 
 void XXRtmp::handshake_done() {
     LOGI("handshake done");
@@ -231,18 +72,64 @@ void XXRtmp::handshake_done() {
     io->SetReadHandler(RtmpRecv, this);
     io->SetWriteHandler(RtmpSend, this);
 
-//    rtmp_recv(io->read_);
     SendChunkSize(4096);
     SendAckWindowSize(5000000);
     SendConnect();
 
     rtmp_send(io->write_);
+    rtmp_recv(io->read_);
 }
 
 void XXRtmp::rtmp_recv(event *rev) {
+    ssize_t n;
+    xxbuf buf(128);
+    xxbuf *b = &buf;
+    u_char *p;
+    uint8_t fmt, ext;
+    uint32_t csid, timestamp;
 
     for (;;) {
         LOGI("main loop");
+
+        n = io->Recv(rev, b->last, b->end - b->last);
+
+        if (n < 0 || n == 0) {
+            LOGE("error");
+            FiniliazeSession();
+            return;
+        }
+
+        if (n == XX_AGAIN) {
+            io->HandleReadEvnet(0);
+            return;
+        }
+
+        b->last += n;
+
+        if (b->pos == b->start) {
+            p = b->pos;
+
+            /* chunk basic header */
+            fmt = (*p >> 6) & 0x03;
+            csid = *p++ & 0x3f;
+
+            if (csid == 0) {
+                if (b->last - p < 1)
+                    continue;
+                csid = 64;
+                csid += *(uint8_t *) p++;
+
+            } else if (csid == 1) {
+                if (b->last - p < 2)
+                    continue;
+                csid = 64;
+                csid += *(uint8_t *) p++;
+                csid += (uint32_t) 256 * (*(uint8_t *) p++);
+            }
+
+
+        }
+
         sleep(1);
     }
 }
@@ -256,15 +143,15 @@ void XXRtmp::rtmp_send(event *wev) {
         n = io->Send(wev, b->pos, b->last - b->pos);
 
         if (n == XX_AGAIN || n == 0) {
-
+            LOGE("rtmp_send again");
             return;
         }
 
         if (n < 0) {
+            LOGE("rtmp_send err");
             return;
         }
 
-        delete b;
         out.pop_front();
     }
 
@@ -277,12 +164,12 @@ void XXRtmp::rtmp_send(event *wev) {
 }
 
 void XXRtmp::SendChunkSize(int chunksize) {
+    std::list<xxbuf *> out;
     xxbuf *b;
     rtmp_header *h;
     u_char *p;
 
     h = new rtmp_header();
-
     b = new xxbuf(8192);
 
     b->pos += 20;
@@ -296,18 +183,18 @@ void XXRtmp::SendChunkSize(int chunksize) {
     *(b->last++) = ((u_char *) &chunksize)[1];
     *(b->last++) = ((u_char *) &chunksize)[0];
 
-    prepare_message(h, NULL, b);
-
-    send_message(b);
+    out.push_back(b);
+    prepare_message(h, NULL, out);
+    send_message(out);
 }
 
 void XXRtmp::SendAckWindowSize(int ack_size) {
+    std::list<xxbuf *> out;
     xxbuf *b;
     rtmp_header *h;
     u_char *p;
 
     h = new rtmp_header();
-
     b = new xxbuf(8192);
 
     b->pos += 20;
@@ -321,16 +208,16 @@ void XXRtmp::SendAckWindowSize(int ack_size) {
     *(b->last++) = ((u_char *) &ack_size)[1];
     *(b->last++) = ((u_char *) &ack_size)[0];
 
-    prepare_message(h, NULL, b);
-
-    send_message(b);
-}
-
-void XXRtmp::send_message(xxbuf *b) {
     out.push_back(b);
+    prepare_message(h, NULL, out);
+    send_message(out);
 }
 
-void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, xxbuf *buf) {
+void XXRtmp::send_message(std::list<xxbuf *> &out2) {
+    out.merge(out2);
+}
+
+void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, std::list<xxbuf *> &out) {
 
     u_char *p, *pp;//= buf->pos;
     uint8_t fmt;
@@ -338,18 +225,19 @@ void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, xxbuf *buf) {
     static uint8_t hdrsize[] = {12, 8, 4, 1}; /* basic + message */
     int hsize, thsize;
     u_char th[7];
-
-
+    std::list<xxbuf *>::iterator it;
+    xxbuf *buf;
 
     /* detect packet size */
     mlen = 0;
-//    nbufs = 0;
-//    for(l = out; l; l = l->next) {
-//        mlen += (l->buf->last - l->buf->pos);
-//        ++nbufs;
-//    }
+    int nbufs = 0;
+    for (it = out.begin(); it != out.end(); ++it) {
 
-    mlen += (buf->last - buf->pos);
+        mlen += ((*it)->last - (*it)->pos);
+        ++nbufs;
+    }
+
+    buf = out.front();
 
     fmt = 0;
     if (lh) {
@@ -448,117 +336,44 @@ void XXRtmp::handle_rtmp_other_event() {
 }
 
 void XXRtmp::SendConnect() {
-#if 0
     static double trans = NGX_RTMP_RELAY_CONNECT_TRANS;
     static double acodecs = 3575;
     static double vcodecs = 252;
 
-    static ngx_rtmp_amf_elt_t out_cmd[] = {
+    XXAmf *obj = new XXAmf();
+    obj->push_back(XXAmfElt(XX_RTMP_AMF_STRING, "app", (void *) "live", 0));
+    obj->push_back(XXAmfElt(XX_RTMP_AMF_STRING, "tcUrl", (void *) "www.xxx.com", 0));
+    obj->push_back(XXAmfElt(XX_RTMP_AMF_STRING, "pageUrl", (void *) "www.xxx.com", 0));
+    obj->push_back(XXAmfElt(XX_RTMP_AMF_STRING, "swfUrl", (void *) "www.xxx.com", 0));
+    obj->push_back(XXAmfElt(XX_RTMP_AMF_STRING, "flashVer", (void *) NGX_RTMP_RELAY_FLASHVER, 0));
+    obj->push_back(XXAmfElt(XX_RTMP_AMF_NUMBER, "audioCodecs", &acodecs, 0));
+    obj->push_back(XXAmfElt(XX_RTMP_AMF_NUMBER, "videoCodecs", &vcodecs, 0));
 
-            {NGX_RTMP_AMF_STRING,
-                    ngx_string("app"),
-                    NULL,     0}, /* <-- fill */
-
-            {NGX_RTMP_AMF_STRING,
-                    ngx_string("tcUrl"),
-                    NULL,     0}, /* <-- fill */
-
-            {NGX_RTMP_AMF_STRING,
-                    ngx_string("pageUrl"),
-                    NULL,     0}, /* <-- fill */
-
-            {NGX_RTMP_AMF_STRING,
-                    ngx_string("swfUrl"),
-                    NULL,     0}, /* <-- fill */
-
-            {NGX_RTMP_AMF_STRING,
-                    ngx_string("flashVer"),
-                    NULL,     0}, /* <-- fill */
-
-            {NGX_RTMP_AMF_NUMBER,
-                    ngx_string("audioCodecs"),
-                    &acodecs, 0},
-
-            {NGX_RTMP_AMF_NUMBER,
-                    ngx_string("videoCodecs"),
-                    &vcodecs, 0}
-    };
-
-    static ngx_rtmp_amf_elt_t out_elts[] = {
-
-            {NGX_RTMP_AMF_STRING,
-                    ngx_null_string,
-                    "connect", 0},
-
-            {NGX_RTMP_AMF_NUMBER,
-                    ngx_null_string,
-                    &trans,    0},
-
-            {NGX_RTMP_AMF_OBJECT,
-                    ngx_null_string,
-                    out_cmd,   sizeof(out_cmd)}
-    };
+    XXAmf *root = new XXAmf();
+    root->push_back({XX_RTMP_AMF_STRING, "", (void *) "connect", 0}); //name property is ignored.
+    root->push_back({XX_RTMP_AMF_NUMBER, "", &trans, 0});
+    root->push_back({XX_RTMP_AMF_OBJECT, "", obj, 0});
 
     rtmp_header h;
-    size_t len, url_len;
-    u_char *p, *url_end;
 
-    /* app */
-    if (ctx->app.len) {
-        out_cmd[0].data = ctx->app.data;
-        out_cmd[0].len = ctx->app.len;
-    } else {
-        out_cmd[0].data = cacf->name.data;
-        out_cmd[0].len = cacf->name.len;
-    }
-
-    /* tcUrl */
-    if (ctx->tc_url.len) {
-        out_cmd[1].data = ctx->tc_url.data;
-        out_cmd[1].len = ctx->tc_url.len;
-    } else {
-        len = sizeof("rtmp://") - 1 + ctx->url.len +
-              sizeof("/") - 1 + ctx->app.len;
-        p = ngx_palloc(s->connection->pool, len);
-        if (p == NULL) {
-            return NGX_ERROR;
-        }
-        out_cmd[1].data = p;
-        p = ngx_cpymem(p, "rtmp://", sizeof("rtmp://") - 1);
-
-        url_len = ctx->url.len;
-        url_end = ngx_strlchr(ctx->url.data, ctx->url.data + ctx->url.len, '/');
-        if (url_end) {
-            url_len = (size_t) (url_end - ctx->url.data);
-        }
-
-        p = ngx_cpymem(p, ctx->url.data, url_len);
-        *p++ = '/';
-        p = ngx_cpymem(p, ctx->app.data, ctx->app.len);
-        out_cmd[1].len = p - (u_char *) out_cmd[1].data;
-    }
-
-    /* pageUrl */
-    out_cmd[2].data = ctx->page_url.data;
-    out_cmd[2].len = ctx->page_url.len;
-
-    /* swfUrl */
-    out_cmd[3].data = ctx->swf_url.data;
-    out_cmd[3].len = ctx->swf_url.len;
-
-    /* flashVer */
-    if (ctx->flash_ver.len) {
-        out_cmd[4].data = ctx->flash_ver.data;
-        out_cmd[4].len = ctx->flash_ver.len;
-    } else {
-        out_cmd[4].data = NGX_RTMP_RELAY_FLASHVER;
-        out_cmd[4].len = sizeof(NGX_RTMP_RELAY_FLASHVER) - 1;
-    }
-
-    ngx_memzero(&h, sizeof(h));
+    xx_memzero(&h, sizeof(h));
     h.csid = NGX_RTMP_RELAY_CSID_AMF_INI;
     h.type = NGX_RTMP_MSG_AMF_CMD;
 
-    ngx_rtmp_send_amf(s, &h, out_elts, sizeof(out_elts) / sizeof(out_elts[0]));
-#endif
+    send_amf(&h, root);
 }
+
+void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
+    ngx_int_t rc;
+    std::list<xxbuf *> t;
+
+    rc = amf->Write(&t);
+
+    if (rc) {
+        LOGE("amf write error");
+        return;
+    }
+    prepare_message(h, NULL, t);
+    send_message(t);
+}
+
