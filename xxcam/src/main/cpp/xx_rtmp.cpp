@@ -4,6 +4,7 @@
 
 
 #include "xx_rtmp.h"
+#include "xx_stream.h"
 #include "xx_amf.h"
 
 
@@ -19,6 +20,8 @@
 
 XXRtmp::XXRtmp() {
     io = new xxio();
+    in_chunk_size = 128;
+    in_streams = new xx_stream[128];
 }
 
 XXRtmp::~XXRtmp() {
@@ -38,7 +41,7 @@ int XXRtmp::CreateSession() {
 }
 
 void XXRtmp::FiniliazeSession() {
-
+    LOGE("Oh My God\n\t*\n\t*\n\t\n*");
 }
 
 void XXRtmp::video(uint8_t *data) {
@@ -53,13 +56,13 @@ void XXRtmp::OnConnect(event *ev) {
 }
 
 void XXRtmp::RtmpSend(event *wev) {
-    LOGI("HandshakeSend");
+    LOGI("RtmpSend");
     XXRtmp *rtmp = (XXRtmp *) wev->data;
     rtmp->rtmp_send(wev);
 }
 
 void XXRtmp::RtmpRecv(event *rev) {
-    LOGI("HandshakeSend");
+    LOGI("RtmpRecv");
     XXRtmp *rtmp = (XXRtmp *) rev->data;
     rtmp->rtmp_recv(rev);
 }
@@ -81,25 +84,29 @@ void XXRtmp::handshake_done() {
 }
 
 void XXRtmp::rtmp_recv(event *rev) {
+    LOGI("rtmp_recv called enter");
     ssize_t n;
-    xxbuf buf(128);
+    xxbuf buf(10000);
     xxbuf *b = &buf;
-    u_char *p;
+    u_char *p, *pp;
     uint8_t fmt, ext;
     uint32_t csid, timestamp;
-
+    rtmp_header *h;
+    size_t size, fsize;
     for (;;) {
         LOGI("main loop");
+        xx_stream *stream = &in_streams[in_csid];
 
         n = io->Recv(rev, b->last, b->end - b->last);
-
-        if (n < 0 || n == 0) {
-            LOGE("error");
+        LOGI(">>>>recv %ld", n);
+        if (n == XX_ERROR || n == 0) {
+            LOGE("rtmp_recv error n %ld", n);
             FiniliazeSession();
             return;
         }
 
         if (n == XX_AGAIN) {
+            LOGE("rtmp_recv aggin");
             io->HandleReadEvnet(0);
             return;
         }
@@ -109,6 +116,7 @@ void XXRtmp::rtmp_recv(event *rev) {
         if (b->pos == b->start) {
             p = b->pos;
 
+            LOGI("parse header ing");
             /* chunk basic header */
             fmt = (*p >> 6) & 0x03;
             csid = *p++ & 0x3f;
@@ -127,10 +135,113 @@ void XXRtmp::rtmp_recv(event *rev) {
                 csid += (uint32_t) 256 * (*(uint8_t *) p++);
             }
 
+            LOGI("RTMP bheader fmt=%d csid=%u", (int) fmt, csid);
+
+            h = &stream->header;
+            ext = stream->ext;
+            timestamp = stream->dtime;
+            if (fmt <= 2) {
+                if (b->last - p < 3)
+                    continue;
+                /* timestamp:
+                 *  big-endian 3b -> little-endian 4b */
+                pp = (u_char *) &timestamp;
+                pp[2] = *p++;
+                pp[1] = *p++;
+                pp[0] = *p++;
+                pp[3] = 0;
+
+                ext = (timestamp == 0x00ffffff);
+
+
+                if (fmt <= 1) {
+                    if (b->last - p < 4)
+                        continue;
+                    /* size:
+                     *  big-endian 3b -> little-endian 4b
+                     * type:
+                     *  1b -> 1b*/
+                    pp = (u_char *) &h->mlen;
+                    pp[2] = *p++;
+                    pp[1] = *p++;
+                    pp[0] = *p++;
+                    pp[3] = 0;
+                    h->type = *(uint8_t *) p++;
+
+                    if (fmt == 0) {
+                        if (b->last - p < 4)
+                            continue;
+                        /* stream:
+                         *  little-endian 4b -> little-endian 4b */
+                        pp = (u_char *) &h->msid;
+                        pp[0] = *p++;
+                        pp[1] = *p++;
+                        pp[2] = *p++;
+                        pp[3] = *p++;
+                    }
+                }
+            }
+
+            LOGI("RTMP bheader type=%d ", h->type);
+
+            /* extended header */
+            if (ext) {
+                if (b->last - p < 4)
+                    continue;
+                pp = (u_char *) &timestamp;
+                pp[3] = *p++;
+                pp[2] = *p++;
+                pp[1] = *p++;
+                pp[0] = *p++;
+            }
+
+//            if (st->len == 0) {
+//                /* Messages with type=3 should
+//                 * never have ext timestamp field
+//                 * according to standard.
+//                 * However that's not always the case
+//                 * in real life */
+//                st->ext = (ext && cscf->publish_time_fix);
+//                if (fmt) {
+//                    st->dtime = timestamp;
+//                } else {
+//                    h->timestamp = timestamp;
+//                    st->dtime = 0;
+//                }
+//            }
+
+            /* header done */
+            b->pos = p;
 
         }
 
-        sleep(1);
+        size = b->last - b->pos;
+        fsize = h->mlen - stream->len;
+
+        if (size < ngx_min(fsize, in_chunk_size))
+            continue;
+
+
+        if (fsize > in_chunk_size) {
+
+            stream->len += in_chunk_size;
+            b->last = b->pos + in_chunk_size;
+//            old_pos = b->last;
+//            old_size = size - in_chunk_size;
+
+        } else {
+
+            b->last = b->pos + fsize;
+            stream->len = 0;
+
+            if (receive_message() != XX_OK) {
+                FiniliazeSession();
+                return;
+            }
+
+        }
+
+        in_csid = 0;
     }
 }
 
@@ -375,5 +486,10 @@ void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
     }
     prepare_message(h, NULL, t);
     send_message(t);
+}
+
+int XXRtmp::receive_message() {
+    LOGI("receive message ing");
+    return 0;
 }
 

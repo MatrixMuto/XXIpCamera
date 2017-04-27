@@ -17,6 +17,13 @@
 #include <unistd.h>
 #include <malloc.h>
 #include <cstdlib>
+#include <netinet/in.h>
+#include <string>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
 
 #include "xx_log.h"
 #include "xx_pool.h"
@@ -30,6 +37,14 @@
 #define  XX_DECLINED   -5
 #define  XX_ABORT      -6
 
+class rtmp_header {
+public:
+    uint8_t type;
+    uint32_t timestamp;
+    uint32_t csid;
+    uint32_t msid;
+    uint32_t mlen; /* message length */
+};
 
 typedef void *ngx_buf_tag_t;
 
@@ -82,5 +97,11 @@ struct ngx_buf_s {
 #define xx_cpymem(dst, src, n)   (((u_char *) memcpy(dst, src, n)) + (n))
 #define xx_memzero(buf, n)       (void) memset(buf, 0, n)
 #define xx_memset(buf, c, n)     (void) memset(buf, c, n)
+
+
+#define ngx_abs(value)       (((value) >= 0) ? (value) : - (value))
+#define ngx_max(val1, val2)  ((val1 < val2) ? (val2) : (val1))
+#define ngx_min(val1, val2)  ((val1 > val2) ? (val2) : (val1))
+
 
 #endif //PROJECT_XXCORE_H

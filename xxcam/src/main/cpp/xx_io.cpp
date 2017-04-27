@@ -5,13 +5,7 @@
 #include "xx_io.h"
 #include "xx_rtmp.h"
 
-#include <netinet/in.h>
-#include <string>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <arpa/inet.h>
+#
 
 #define NGX_TIMER_INFINITE (-1)
 
@@ -110,7 +104,7 @@ void* xxio::loop_enter(void *data)
 
         err = io->process();
 
-        err = io->Select(1000);
+        err = io->Select(5000);
 
         if (err) {
             break;
@@ -141,7 +135,7 @@ int xxio::Select(long timer) {
             }
         }
 
-        LOGI("max fd is %d", max_fd_);
+//        LOGI("max fd is %d", max_fd_);
 
     }
 
@@ -226,8 +220,7 @@ int xxio::process() {
 
 void xxio::addEvent(event *ev) {
 
-    LOGI("ev %p nevents_ %d ", ev, nevents_);
-    LOGI("ev->fd %d ", sockfd_);
+    LOGI("addEvent ev %p nevents_ %d fd %d", ev, nevents_, sockfd_);
 
     if (ev->write) {
         FD_SET(sockfd_, &writeset_in_);
@@ -238,7 +231,6 @@ void xxio::addEvent(event *ev) {
     if (max_fd_ != -1 && max_fd_ < sockfd_) {
         max_fd_ = sockfd_;
     }
-
 
     ev->active = 1;
 
@@ -334,6 +326,7 @@ ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
             n = XX_AGAIN;
         } else {
             n = XX_ERROR;
+            LOGE("io recv error %d", err);
             break;
         }
 
@@ -376,6 +369,7 @@ void xxio::Close() {
 }
 
 void xxio::HandleReadEvnet(int i) {
+    LOGI("HandleReadEvnet ready %d active %d", read_->ready, read_->active);
     if (!read_->ready && !read_->active) {
         addEvent(read_);
     }
