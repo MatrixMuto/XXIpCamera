@@ -41,7 +41,7 @@ int XXRtmp::CreateSession() {
 }
 
 void XXRtmp::FiniliazeSession() {
-    LOGE("Oh My God\n\t*\n\t*\n\t\n*");
+    LOGE("Oh My God\n\t*\n\t*\n\t*\n");
 }
 
 void XXRtmp::video(uint8_t *data) {
@@ -84,160 +84,85 @@ void XXRtmp::handshake_done() {
 
 void XXRtmp::rtmp_recv(event *rev) {
     LOGI("rtmp_recv called enter");
-    ssize_t n;
-    xxbuf buf(10000);
-    xxbuf *b = &buf;
-    u_char *p, *pp;
-    uint8_t fmt, ext;
-    uint32_t csid, timestamp;
-    rtmp_header *h;
-    size_t size, fsize;
+    ssize_t         n;
+    xxbuf           *b = new xxbuf(5000);
+    u_char          *p, *pp, *old_pos;
+    uint8_t         fmt, ext;
+    uint32_t        csid, timestamp;
+    rtmp_header     *h;
+    size_t          size, fsize;
+    xx_stream       *stream;
+    size_t          old_size;
+    int rc;
+
+    old_pos = NULL;
+    old_size = 0;
+
     for (;;) {
         LOGI("main loop");
-        xx_stream *stream = &in_streams[in_csid];
 
-        n = io->Recv(rev, b->last, b->end - b->last);
-        LOGI(">>>>recv %ld", n);
-        if (n == XX_ERROR || n == 0) {
-            LOGE("rtmp_recv error n %ld", n);
-            FiniliazeSession();
-            return;
-        }
+        stream = &in_streams[in_csid];
 
-        if (n == XX_AGAIN) {
-            LOGE("rtmp_recv aggin");
-            io->HandleReadEvnet(0);
-            return;
-        }
+        if (old_size) {
 
-        b->last += n;
-
-        if (b->pos == b->start) {
-            p = b->pos;
-
-            LOGI("parse header ing");
-            /* chunk basic header */
-            fmt = (*p >> 6) & 0x03;
-            csid = *p++ & 0x3f;
-
-            if (csid == 0) {
-                if (b->last - p < 1)
-                    continue;
-                csid = 64;
-                csid += *(uint8_t *) p++;
-
-            } else if (csid == 1) {
-                if (b->last - p < 2)
-                    continue;
-                csid = 64;
-                csid += *(uint8_t *) p++;
-                csid += (uint32_t) 256 * (*(uint8_t *) p++);
-            }
-
-            LOGI("RTMP bheader fmt=%d csid=%u", (int) fmt, csid);
-
-            h = &stream->header;
-            ext = stream->ext;
-            timestamp = stream->dtime;
-            if (fmt <= 2) {
-                if (b->last - p < 3)
-                    continue;
-                /* timestamp:
-                 *  big-endian 3b -> little-endian 4b */
-                pp = (u_char *) &timestamp;
-                pp[2] = *p++;
-                pp[1] = *p++;
-                pp[0] = *p++;
-                pp[3] = 0;
-
-                ext = (timestamp == 0x00ffffff);
-
-
-                if (fmt <= 1) {
-                    if (b->last - p < 4)
-                        continue;
-                    /* size:
-                     *  big-endian 3b -> little-endian 4b
-                     * type:
-                     *  1b -> 1b*/
-                    pp = (u_char *) &h->mlen;
-                    pp[2] = *p++;
-                    pp[1] = *p++;
-                    pp[0] = *p++;
-                    pp[3] = 0;
-                    h->type = *(uint8_t *) p++;
-
-                    if (fmt == 0) {
-                        if (b->last - p < 4)
-                            continue;
-                        /* stream:
-                         *  little-endian 4b -> little-endian 4b */
-                        pp = (u_char *) &h->msid;
-                        pp[0] = *p++;
-                        pp[1] = *p++;
-                        pp[2] = *p++;
-                        pp[3] = *p++;
-                    }
-                }
-            }
-
-            LOGI("RTMP bheader type=%d ", h->type);
-
-            /* extended header */
-            if (ext) {
-                if (b->last - p < 4)
-                    continue;
-                pp = (u_char *) &timestamp;
-                pp[3] = *p++;
-                pp[2] = *p++;
-                pp[1] = *p++;
-                pp[0] = *p++;
-            }
-
-//            if (st->len == 0) {
-//                /* Messages with type=3 should
-//                 * never have ext timestamp field
-//                 * according to standard.
-//                 * However that's not always the case
-//                 * in real life */
-//                st->ext = (ext && cscf->publish_time_fix);
-//                if (fmt) {
-//                    st->dtime = timestamp;
-//                } else {
-//                    h->timestamp = timestamp;
-//                    st->dtime = 0;
-//                }
-//            }
-
-            /* header done */
-            b->pos = p;
-
-        }
-
-        size = b->last - b->pos;
-        fsize = h->mlen - stream->len;
-
-        if (size < ngx_min(fsize, in_chunk_size))
-            continue;
-
-
-        if (fsize > in_chunk_size) {
-
-            stream->len += in_chunk_size;
-            b->last = b->pos + in_chunk_size;
-//            old_pos = b->last;
-//            old_size = size - in_chunk_size;
+            b->pos = b->start;
+            b->last = xx_movemem(b->pos, old_pos, old_size);
 
         } else {
-
-            b->last = b->pos + fsize;
-            stream->len = 0;
-
-            if (receive_message() != XX_OK) {
+            n = io->Recv(rev, b->last, b->end - b->last);
+            LOGI(">>>>recv %ld", n);
+            if (n == XX_ERROR || n == 0) {
+                LOGE("rtmp_recv error n %ld", n);
                 FiniliazeSession();
                 return;
             }
 
+            if (n == XX_AGAIN) {
+                LOGE("rtmp_recv aggin");
+                io->HandleReadEvnet(0);
+                return;
+            }
+
+            b->last += n;
+        }
+
+        old_pos = NULL;
+        old_size = 0;
+
+        if (b->pos == b->start) {
+            p = stream->ParseHeader(b->pos, b->last);
+            if (!p) {
+                continue;
+            }
+            /* header done */
+            b->pos = p;
+        }
+
+        size = b->last - b->pos; /* current buf 's data*/
+        fsize = stream->header_.mlen - stream->len_; /* current msg still need*/
+
+        /*fill one chunk or fill all message*/
+        if (size < ngx_min(fsize, in_chunk_size))
+            continue;
+
+        if (fsize > in_chunk_size) {
+            /* message not complete*/
+            stream->len_ += in_chunk_size;
+            b->last = b->pos + in_chunk_size;
+            old_pos = b->last;
+            old_size = size - in_chunk_size;
+
+        } else {
+
+            b->last = b->pos + fsize;
+            old_pos = b->last;
+            old_size = size - fsize;
+            stream->len_ = 0;
+
+            if (receive_message(stream) != XX_OK) {
+                FiniliazeSession();
+                return;
+            }
         }
 
         in_csid = 0;
@@ -325,6 +250,9 @@ void XXRtmp::SendAckWindowSize(int ack_size) {
 
 void XXRtmp::send_message(std::list<xxbuf *> &out2) {
     out.merge(out2);
+    if ( !io->write_->active) {
+        rtmp_send(io->write_);
+    }
 }
 
 void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, std::list<xxbuf *> &out) {
@@ -487,8 +415,42 @@ void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
     send_message(t);
 }
 
-int XXRtmp::receive_message() {
+int XXRtmp::receive_message(xx_stream *pStream) {
     LOGI("receive message ing");
+    rtmp_header *h = &pStream->header_;
+    if ( h->type == NGX_RTMP_MSG_CHUNK_SIZE) {
+        in_chunk_size = 4096;
+    } else if (h->type == NGX_RTMP_MSG_AMF_CMD) {
+        amf_message_handle(pStream);
+    }
     return 0;
+}
+
+void XXRtmp::amf_message_handle(xx_stream *stream) {
+    static int i = 0;
+    if (i==0) {
+        send_create_stream();
+        i = 1;
+    }
+    else if (i==1) {
+
+    }
+}
+
+void XXRtmp::send_create_stream() {
+    static double trans = NGX_RTMP_RELAY_CREATE_STREAM_TRANS;
+
+    XXAmf *create_stream = new XXAmf();
+    create_stream->push_back( {XX_RTMP_AMF_STRING, "", (void*)"createStream", 0});
+    create_stream->push_back( {XX_RTMP_AMF_NUMBER, "", (void*)&trans, 0});
+    create_stream->push_back( {XX_RTMP_AMF_NULL, "", NULL, 0});
+
+    rtmp_header           h;
+
+    xx_memzero(&h, sizeof(h));
+    h.csid = NGX_RTMP_RELAY_CSID_AMF_INI;
+    h.type = NGX_RTMP_MSG_AMF_CMD;
+
+    return send_amf(&h, create_stream);
 }
 

@@ -97,7 +97,11 @@ private:
 
     int in_chunk_size;
 
-    int receive_message();
+    int receive_message(xx_stream *pStream);
+
+    void amf_message_handle(xx_stream *stream);
+
+    void send_create_stream();
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H

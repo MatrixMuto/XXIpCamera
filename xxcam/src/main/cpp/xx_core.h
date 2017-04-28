@@ -97,7 +97,8 @@ struct ngx_buf_s {
 #define xx_cpymem(dst, src, n)   (((u_char *) memcpy(dst, src, n)) + (n))
 #define xx_memzero(buf, n)       (void) memset(buf, 0, n)
 #define xx_memset(buf, c, n)     (void) memset(buf, c, n)
-
+#define xx_memmove(dst, src, n)   (void) memmove(dst, src, n)
+#define xx_movemem(dst, src, n)   (((u_char *) memmove(dst, src, n)) + (n))
 
 #define ngx_abs(value)       (((value) >= 0) ? (value) : - (value))
 #define ngx_max(val1, val2)  ((val1 < val2) ? (val2) : (val1))
