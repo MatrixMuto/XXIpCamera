@@ -56,7 +56,7 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1eatVideo(JNIEnv *env, jobject instance
 
 JNIEXPORT void JNICALL
 Java_com_mut0_xxcam_XXRtmpPublish_native_1connect(JNIEnv *env, jobject instance) {
-    rtmp->Connect();
+    rtmp->CreateSession();
 }
 
 }

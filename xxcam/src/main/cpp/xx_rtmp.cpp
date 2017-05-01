@@ -29,6 +29,7 @@ XXRtmp::~XXRtmp() {
 }
 
 int XXRtmp::CreateSession() {
+    in_csid = 0;
     std::string url = "rtmp://127.0.0.1:1935/live/test";
 
     io->Connect(url, OnConnect, this);
@@ -170,10 +171,9 @@ void XXRtmp::Recv(event *rev) {
             }
 
             if (in_csid == 0) {
-                in_csid = csid;
-
                 stream->some_.pop_back();
 
+                in_csid = csid;
                 stream = &in_streams[in_csid];
                 stream->some_.push_back(b);
             }
@@ -552,7 +552,7 @@ void XXRtmp::send_publish() {
     publish->push_back({XX_RTMP_AMF_STRING, "", (void *) "publish", 0});
     publish->push_back({XX_RTMP_AMF_NUMBER, "", (void *) &trans, 0});
     publish->push_back({XX_RTMP_AMF_NULL, "", NULL, 0});
-    publish->push_back({XX_RTMP_AMF_STRING, "", "paht?", 0});
+    publish->push_back({XX_RTMP_AMF_STRING, "", (void *) "test", 0});
     publish->push_back({XX_RTMP_AMF_STRING, "", (void *) "live", 0});
 
     rtmp_header h;

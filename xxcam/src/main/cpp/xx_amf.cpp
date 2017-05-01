@@ -52,7 +52,7 @@ ngx_rtmp_amf_debug(const char *op, u_char *p, size_t n) {
     }
     *hp = *sp = '\0';
 
-    LOGI("AMF %s (%ld)%s '%s'", op, n, hstr, str);
+    LOGI("AMF %s (%u)%s '%s'", op, n, hstr, str);
 }
 
 #endif
@@ -379,7 +379,7 @@ ngx_rtmp_amf_read(ngx_rtmp_amf_ctx_t *ctx, ngx_rtmp_amf_elt_t *elts,
                 }
 
             case XX_RTMP_AMF_OBJECT:
-                if (ngx_rtmp_amf_read_object(ctx, data,
+                if (ngx_rtmp_amf_read_object(ctx, (ngx_rtmp_amf_elt_t *) data,
                                              data && elts ? elts->len / sizeof(ngx_rtmp_amf_elt_t) : 0
                 ) != XX_OK) {
                     return XX_ERROR;
@@ -387,7 +387,7 @@ ngx_rtmp_amf_read(ngx_rtmp_amf_ctx_t *ctx, ngx_rtmp_amf_elt_t *elts,
                 break;
 
             case XX_RTMP_AMF_ARRAY:
-                if (ngx_rtmp_amf_read_array(ctx, data,
+                if (ngx_rtmp_amf_read_array(ctx, (ngx_rtmp_amf_elt_t *) data,
                                             data && elts ? elts->len / sizeof(ngx_rtmp_amf_elt_t) : 0
                 ) != XX_OK) {
                     return XX_ERROR;
@@ -395,7 +395,7 @@ ngx_rtmp_amf_read(ngx_rtmp_amf_ctx_t *ctx, ngx_rtmp_amf_elt_t *elts,
                 break;
 
             case XX_RTMP_AMF_VARIANT_:
-                if (ngx_rtmp_amf_read_variant(ctx, data,
+                if (ngx_rtmp_amf_read_variant(ctx, (ngx_rtmp_amf_elt_t *) data,
                                               data && elts ? elts->len / sizeof(ngx_rtmp_amf_elt_t) : 0
                 ) != XX_OK) {
                     return XX_ERROR;
@@ -465,6 +465,7 @@ XXAmf *XXAmf::push_back(const XXAmfElt &elt) {
 int XXAmf::Write(std::list<xxbuf *> *out) {
     this->out = out;
     write_internal(elements);
+    return XX_OK;
 }
 
 int XXAmf::write_internal(std::list<XXAmfElt> &elements) {
@@ -490,7 +491,7 @@ int XXAmf::write_internal(std::list<XXAmfElt> &elements) {
             if (Put(&type8, 1) != XX_OK)
                 return XX_ERROR;
         }
-
+        LOGI("write_internal type %d", type);
         switch (type) {
             case XX_RTMP_AMF_NUMBER:
                 if (Put(ngx_rtmp_amf_reverse_copy(buf, data, 8), 8) != XX_OK) {

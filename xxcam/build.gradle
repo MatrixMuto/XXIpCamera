@@ -13,13 +13,11 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
         externalNativeBuild {
-            cmake {
+//            cmake {
 //                arguments '-DANDROID_PLATFORM=android-9',
 //                        '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=gnustl_static'
-            }
-            ndkBuild {
-                abiFilters 'armeabi-v7a'
-            }
+//                arguments '-DANDROID_ABI=armeabi-v7a'
+//            }
         }
 
     }

@@ -66,6 +66,9 @@ void XXRtmp::handshake_send(event *wev) {
 
         if (n == XX_ERROR) {
             LOGE("send return %ld", n);
+            if (wev->active) {
+                io->deleteEvnet(wev);
+            }
             FiniliazeSession();
             return;
         }
