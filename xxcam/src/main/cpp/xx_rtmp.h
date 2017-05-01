@@ -63,7 +63,8 @@ private:
     void fill_random_buffer(xxbuf *b);
 
     void rtmp_send(event *wev);
-    void rtmp_recv(event *rev);
+
+    void Recv(event *rev);
 
     int create_response();
 
@@ -95,13 +96,25 @@ private:
 
     void FiniliazeSession();
 
-    int in_chunk_size;
+    size_t in_chunk_size;
 
     int receive_message(xx_stream *pStream);
 
     void amf_message_handle(xx_stream *stream);
 
     void send_create_stream();
+
+    void protocol_message_handler();
+
+    uint64_t in_bytes;
+
+    void on_result(XXAmf *pAmf);
+
+    void on_error();
+
+    void send_publish();
+
+    void on_status();
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H

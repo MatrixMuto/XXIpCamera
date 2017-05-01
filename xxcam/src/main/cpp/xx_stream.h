@@ -15,8 +15,11 @@ public:
     int dtime_;
     rtmp_header header_;
     int len_;
+    std::list<xxbuf *> some_;
 
-    u_char * ParseHeader(u_char *p, u_char *string);
+    int ParseHeader(uint8_t fmt, u_char *&pos, u_char *last);
+
+    int32_t ParseChunkStreamId(u_char *&p, u_char *last, uint8_t *fmt2, uint32_t *csid2);
 };
 
 #endif //XXRTMP_XX_STREAM_H

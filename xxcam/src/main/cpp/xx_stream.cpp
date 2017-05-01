@@ -8,14 +8,9 @@ xx_stream::xx_stream() {
 
 }
 
-u_char * xx_stream::ParseHeader(u_char *pos, u_char *last) {
-    u_char      *p, *pp;
-    uint8_t     fmt;
-    uint32_t    csid;
-    rtmp_header *h;
-    uint32_t    timestamp, ext;
-
-    p = pos;
+int32_t xx_stream::ParseChunkStreamId(u_char *&p, u_char *last, uint8_t *fmt2, uint32_t *csid2) {
+    uint8_t fmt;
+    uint32_t csid;
 
     /* chunk basic header */
     fmt = (*p >> 6) & 0x03;
@@ -23,28 +18,40 @@ u_char * xx_stream::ParseHeader(u_char *pos, u_char *last) {
 
     if (csid == 0) {
         if (last - p < 1) {
-            return NULL;
+            return XX_AGAIN;
         }
         csid = 64;
         csid += *(uint8_t *) p++;
 
     } else if (csid == 1) {
         if (last - p < 2) {
-            return NULL;
+            return XX_AGAIN;
         }
         csid = 64;
         csid += *(uint8_t *) p++;
         csid += (uint32_t) 256 * (*(uint8_t *) p++);
     }
 
-    LOGI("RTMP bheader fmt=%d csid=%u", (int) fmt, csid);
+    LOGI("RTMP header fmt=%d csid=%u", (int) fmt, csid);
+
+    *fmt2 = fmt;
+    *csid2 = csid;
+
+    return XX_OK;
+}
+
+int xx_stream::ParseHeader(uint8_t fmt, u_char *&p, u_char *last) {
+    u_char *pp;
+    rtmp_header *h;
+    uint32_t timestamp, ext;
+
 
     h = &header_;
     ext = ext_;
     timestamp = dtime_;
     if (fmt <= 2) {
         if (last - p < 3) {
-            return NULL;
+            return XX_AGAIN;
         }
         /* timestamp:
          *  big-endian 3b -> little-endian 4b */
@@ -58,7 +65,7 @@ u_char * xx_stream::ParseHeader(u_char *pos, u_char *last) {
 
         if (fmt <= 1) {
             if (last - p < 4) {
-                return NULL;
+                return XX_AGAIN;
             }
             /* size:
              *  big-endian 3b -> little-endian 4b
@@ -73,7 +80,7 @@ u_char * xx_stream::ParseHeader(u_char *pos, u_char *last) {
 
             if (fmt == 0) {
                 if (last - p < 4) {
-                    return NULL;
+                    return XX_AGAIN;
                 }
                 /* stream:
                  *  little-endian 4b -> little-endian 4b */
@@ -86,12 +93,12 @@ u_char * xx_stream::ParseHeader(u_char *pos, u_char *last) {
         }
     }
 
-    LOGI("RTMP bheader type=%d ", h->type);
+    LOGI("RTMP header type=%d ", h->type);
 
     /* extended header */
     if (ext) {
         if (last - p < 4) {
-            return NULL;
+            return XX_AGAIN;
         }
         pp = (u_char *) &timestamp;
         pp[3] = *p++;
@@ -114,5 +121,7 @@ u_char * xx_stream::ParseHeader(u_char *pos, u_char *last) {
 //                    st->dtime = 0;
 //                }
 //            }
-    return p;
+    return XX_OK;
 }
+
+

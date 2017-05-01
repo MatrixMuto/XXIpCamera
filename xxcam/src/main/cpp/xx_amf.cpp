@@ -105,6 +105,55 @@ ngx_rtmp_amf_get(ngx_rtmp_amf_ctx_t *ctx, void *p, size_t n) {
     return XX_DONE;
 }
 
+
+int XXAmf::Get(void *p, size_t n) {
+    size_t size;
+    size_t offset;
+    u_char *pos, *last;
+#ifdef XX_DEBUG
+    void *op = p;
+    size_t on = n;
+#endif
+
+    if (!n)
+        return XX_OK;
+    std::list<xxbuf *>::iterator l;
+
+    for (l = it_, offset = offset_; l != in->end(); l = l++, offset = 0) {
+
+        pos = (*l)->pos + offset;
+        last = (*l)->last;
+
+        if (last >= pos + n) {
+            if (p) {
+                p = xx_cpymem(p, pos, n);
+            }
+            offset_ = offset + n;
+            it_ = l;
+
+#ifdef XX_DEBUG
+            ngx_rtmp_amf_debug("read", (u_char *) op, on);
+#endif
+
+            return XX_OK;
+        }
+
+        size = last - pos;
+
+        if (p) {
+            p = xx_cpymem(p, pos, size);
+        }
+
+        n -= size;
+    }
+
+//    ngx_log_debug1(XX_LOG_DEBUG_RTMP, ctx->log, 0,
+//                   "AMF read eof (%d)", n);
+
+    return XX_DONE;
+
+}
+
 static ngx_int_t
 ngx_rtmp_amf_read_object(ngx_rtmp_amf_ctx_t *ctx, ngx_rtmp_amf_elt_t *elts,
                          size_t nelts) {
@@ -604,3 +653,145 @@ int XXAmf::WriteObject(XXAmf *obj) {
 
     return XX_OK;
 }
+
+void XXAmf::Read(std::list<xxbuf *> *list) {
+    this->in = list;
+
+    it_ = list->begin();
+//    read_internal();
+}
+
+int XXAmf::read_internal(void *data) {
+    uint8_t type8;
+    uint32_t type;
+    u_char buf[8];
+    uint16_t len;
+    uint32_t max_index;
+    int rc;
+
+    Get(&type8, 1);
+
+    type = type8;
+    switch (type) {
+        case XX_RTMP_AMF_NUMBER:
+            if (Get(buf, 8) != XX_OK) {
+                return XX_ERROR;
+            }
+            ngx_rtmp_amf_reverse_copy(data, buf, 8);
+            break;
+
+        case XX_RTMP_AMF_BOOLEAN:
+            if (Get(data, 1) != XX_OK) {
+                return XX_ERROR;
+            }
+            break;
+
+        case XX_RTMP_AMF_STRING:
+            if (Get(buf, 2) != XX_OK) {
+                return XX_ERROR;
+            }
+            ngx_rtmp_amf_reverse_copy(&len, buf, 2);
+
+            if (data == NULL) {
+                rc = Get(data, len);
+//            }
+//            } else if (elts->len <= len) {
+//                rc = Get(data, elts->len - 1);
+//                if (rc != XX_OK)
+//                    return XX_ERROR;
+//                ((char *) data)[elts->len - 1] = 0;
+//                rc = Get(NULL, len - elts->len + 1);
+//
+            } else {
+                rc = Get(data, len);
+                ((char *) data)[len] = 0;
+            }
+
+            if (rc != XX_OK) {
+                return XX_ERROR;
+            }
+
+            break;
+
+        case XX_RTMP_AMF_NULL:
+        case XX_RTMP_AMF_ARRAY_NULL:
+            break;
+
+        case XX_RTMP_AMF_MIXED_ARRAY:
+            if (Get(&max_index, 4) != XX_OK) {
+                return XX_ERROR;
+            }
+
+        case XX_RTMP_AMF_OBJECT:
+//            if (ngx_rtmp_amf_read_object(ctx, data,
+//                                         data && elts ? elts->len / sizeof(ngx_rtmp_amf_elt_t) : 0
+//            ) != XX_OK) {
+//                return XX_ERROR;
+//            }
+//            if (read_object())
+//                break;
+
+        case XX_RTMP_AMF_ARRAY:
+//            if (ngx_rtmp_amf_read_array(ctx, data,
+//                                        data && elts ? elts->len / sizeof(ngx_rtmp_amf_elt_t) : 0
+//            ) != XX_OK) {
+//                return XX_ERROR;
+//            }
+            break;
+
+        case XX_RTMP_AMF_VARIANT_:
+//            if (ngx_rtmp_amf_read_variant(ctx, data,
+//                                          data && elts ? elts->len / sizeof(ngx_rtmp_amf_elt_t) : 0
+//            ) != XX_OK) {
+//                return XX_ERROR;
+//            }
+            break;
+
+        case XX_RTMP_AMF_INT8:
+            if (Get(data, 1) != XX_OK) {
+                return XX_ERROR;
+            }
+            break;
+
+        case XX_RTMP_AMF_INT16:
+            if (Get(buf, 2) != XX_OK) {
+                return XX_ERROR;
+            }
+            ngx_rtmp_amf_reverse_copy(data, buf, 2);
+            break;
+
+        case XX_RTMP_AMF_INT32:
+            if (Get(buf, 4) != XX_OK) {
+                return XX_ERROR;
+            }
+            ngx_rtmp_amf_reverse_copy(data, buf, 4);
+            break;
+
+        case XX_RTMP_AMF_END:
+            return XX_OK;
+
+        default:
+            return XX_ERROR;
+    }
+
+}
+
+int XXAmf::read_object() {
+    return 0;
+}
+
+XXAmf::XXAmf(std::list<xxbuf *> *buf) {
+    in = buf;
+    it_ = buf->begin();
+}
+
+void XXAmf::GetFunc(std::string &string) {
+    char func[128] = {0};
+    read_internal(func);
+    string = std::string(func);
+}
+
+void XXAmf::GetTrans(double *pDouble) {
+    read_internal(pDouble);
+}
+

@@ -96,16 +96,14 @@ public:
 
     XXAmf(ngx_rtmp_amf_alloc2_pt *alloc);
 
+    XXAmf(std::list<xxbuf *> *buf);
     ~XXAmf();
 
     XXAmf *push_back(const XXAmfElt &elt);
 
     int Write(std::list<xxbuf *> *out);
 
-private:
-    std::list<XXAmfElt> elements;
-    std::list<xxbuf *> *out;
-
+    void Read(std::list<xxbuf *> *list);
     int WriteArray(void *pVoid, size_t len);
 
     int WriteObject(XXAmf *obj);
@@ -113,6 +111,30 @@ private:
     int Put(void *p, size_t n);
 
     int write_internal(std::list<XXAmfElt> &elements);
+
+
+    int Get(void *p, size_t n);
+
+    std::list<XXAmfElt> elements;
+
+    void GetFunc(std::string &string);
+
+    void GetNumber();
+
+    void GetTrans(double *pDouble);
+
+private:
+    std::list<xxbuf *> *out;
+    std::list<xxbuf *> *in;
+
+
+    std::list<xxbuf *>::iterator it;
+    size_t offset_;
+    std::list<xxbuf *>::iterator it_;
+
+    int read_object();
+
+    int read_internal(void *data);
 };
 
 #endif //PROJECT_AMF_H

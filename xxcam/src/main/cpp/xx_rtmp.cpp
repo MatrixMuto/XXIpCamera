@@ -64,7 +64,7 @@ void XXRtmp::RtmpSend(event *wev) {
 void XXRtmp::RtmpRecv(event *rev) {
     LOGI("RtmpRecv");
     XXRtmp *rtmp = (XXRtmp *) rev->data;
-    rtmp->rtmp_recv(rev);
+    rtmp->Recv(rev);
 }
 
 
@@ -79,29 +79,35 @@ void XXRtmp::handshake_done() {
     SendConnect();
 
     rtmp_send(io->write_);
-    rtmp_recv(io->read_);
+    Recv(io->read_);
 }
 
-void XXRtmp::rtmp_recv(event *rev) {
-    LOGI("rtmp_recv called enter");
-    ssize_t         n;
-    xxbuf           *b = new xxbuf(5000);
-    u_char          *p, *pp, *old_pos;
-    uint8_t         fmt, ext;
-    uint32_t        csid, timestamp;
-    rtmp_header     *h;
-    size_t          size, fsize;
-    xx_stream       *stream;
-    size_t          old_size;
+void XXRtmp::Recv(event *rev) {
+    LOGI("Recv called enter");
+    ssize_t n;
+    xxbuf *b = new xxbuf(5000);
+    u_char *p, *pp, *old_pos;
+    uint8_t fmt, ext;
+    uint32_t csid, timestamp;
+    rtmp_header *h;
+    size_t size, fsize;
+    xx_stream *stream;
+    size_t old_size;
     int rc;
 
     old_pos = NULL;
     old_size = 0;
 
     for (;;) {
-        LOGI("main loop");
 
         stream = &in_streams[in_csid];
+
+        if (stream->some_.empty()) {
+            xxbuf *bb = new xxbuf(in_chunk_size + 20);
+            stream->some_.push_back(bb);
+        }
+
+        b = stream->some_.back();
 
         if (old_size) {
 
@@ -110,32 +116,80 @@ void XXRtmp::rtmp_recv(event *rev) {
 
         } else {
             n = io->Recv(rev, b->last, b->end - b->last);
-            LOGI(">>>>recv %ld", n);
+            LOGI("recv %ld", n);
             if (n == XX_ERROR || n == 0) {
-                LOGE("rtmp_recv error n %ld", n);
+                LOGE("Recv error n %ld", n);
                 FiniliazeSession();
                 return;
             }
 
             if (n == XX_AGAIN) {
-                LOGE("rtmp_recv aggin");
+                LOGE("Recv aggin");
                 io->HandleReadEvnet(0);
                 return;
             }
 
             b->last += n;
+            in_bytes += n;
+
+//            if (s->in_bytes >= 0xf0000000) {
+//                ngx_log_debug0(NGX_LOG_DEBUG_RTMP, c->log, 0,
+//                               "resetting byte counter");
+//                s->in_bytes = 0;
+//                s->in_last_ack = 0;
+//            }
+//
+//            if (s->ack_size && s->in_bytes - s->in_last_ack >= s->ack_size) {
+//
+//                s->in_last_ack = s->in_bytes;
+//
+//                ngx_log_debug1(NGX_LOG_DEBUG_RTMP, c->log, 0,
+//                               "sending RTMP ACK(%uD)", s->in_bytes);
+//
+//                if (ngx_rtmp_send_ack(s, s->in_bytes)) {
+//                    ngx_rtmp_finalize_session(s);
+//                    return;
+//                }
+//            }
         }
 
         old_pos = NULL;
         old_size = 0;
 
+        /* if parsing pos is in zero, need parse header, else just recv chunk data.*/
         if (b->pos == b->start) {
-            p = stream->ParseHeader(b->pos, b->last);
-            if (!p) {
+            u_char *p = b->pos;
+            if (stream->ParseChunkStreamId(p, b->last, &fmt, &csid) == XX_AGAIN) {
                 continue;
             }
-            /* header done */
+
+            if (csid > 65536) {
+                LOGE("max csid");
+                FiniliazeSession();
+                return;
+            }
+
+            if (in_csid == 0) {
+                in_csid = csid;
+
+                stream->some_.pop_back();
+
+                stream = &in_streams[in_csid];
+                stream->some_.push_back(b);
+            }
+
+            if (stream->ParseHeader(fmt, p, b->last) == XX_AGAIN) {
+                continue;
+            }
+
             b->pos = p;
+            /* header done */
+
+            if (stream->header_.mlen > 19999) {
+                LOGE("too big message");
+                FiniliazeSession();
+                return;
+            }
         }
 
         size = b->last - b->pos; /* current buf 's data*/
@@ -153,7 +207,7 @@ void XXRtmp::rtmp_recv(event *rev) {
             old_size = size - in_chunk_size;
 
         } else {
-
+            /* handle message*/
             b->last = b->pos + fsize;
             old_pos = b->last;
             old_size = size - fsize;
@@ -162,6 +216,13 @@ void XXRtmp::rtmp_recv(event *rev) {
             if (receive_message(stream) != XX_OK) {
                 FiniliazeSession();
                 return;
+            }
+
+            if (0) {
+
+            } else {
+                /*add used buf to stream0*/
+                stream->some_.clear();
             }
         }
 
@@ -250,7 +311,7 @@ void XXRtmp::SendAckWindowSize(int ack_size) {
 
 void XXRtmp::send_message(std::list<xxbuf *> &out2) {
     out.merge(out2);
-    if ( !io->write_->active) {
+    if (!io->write_->active) {
         rtmp_send(io->write_);
     }
 }
@@ -373,6 +434,72 @@ void XXRtmp::handle_rtmp_other_event() {
 
 }
 
+
+int XXRtmp::receive_message(xx_stream *stream) {
+    LOGI("receive message ing");
+    rtmp_header *h = &stream->header_;
+
+    switch (h->type) {
+        case NGX_RTMP_MSG_CHUNK_SIZE:
+        case NGX_RTMP_MSG_ABORT:
+        case NGX_RTMP_MSG_ACK:
+        case NGX_RTMP_MSG_ACK_SIZE:
+        case NGX_RTMP_MSG_BANDWIDTH:
+            protocol_message_handler();
+            break;
+    }
+
+    if (h->type == NGX_RTMP_MSG_CHUNK_SIZE) {
+        in_chunk_size = 4000;
+    } else if (h->type == NGX_RTMP_MSG_AMF_CMD) {
+        amf_message_handle(stream);
+    }
+    return 0;
+}
+
+void XXRtmp::amf_message_handle(xx_stream *stream) {
+    static int i = 0;
+    XXAmf *amf = new XXAmf(&stream->some_);
+    std::string func;
+//    XXAmfElt *elt = new XXAmfElt();
+    amf->GetFunc(func);
+
+    if (func == "_result") {
+        on_result(amf);
+    } else if (func == "_error") {
+        on_error();
+    } else if (func == "onStatus") {
+        on_status();
+    }
+}
+
+
+void XXRtmp::protocol_message_handler() {
+
+}
+
+void XXRtmp::on_result(XXAmf *pAmf) {
+    double trans;
+    pAmf->GetTrans(&trans);
+    switch ((int) trans) {
+        case NGX_RTMP_RELAY_CONNECT_TRANS:
+            send_create_stream();
+            break;
+        case NGX_RTMP_RELAY_CREATE_STREAM_TRANS:
+            send_publish();
+            break;
+    }
+}
+
+void XXRtmp::on_error() {
+
+}
+
+
+void XXRtmp::on_status() {
+
+}
+
 void XXRtmp::SendConnect() {
     static double trans = NGX_RTMP_RELAY_CONNECT_TRANS;
     static double acodecs = 3575;
@@ -401,6 +528,43 @@ void XXRtmp::SendConnect() {
     send_amf(&h, root);
 }
 
+void XXRtmp::send_create_stream() {
+    static double trans = NGX_RTMP_RELAY_CREATE_STREAM_TRANS;
+
+    XXAmf *create_stream = new XXAmf();
+    create_stream->push_back({XX_RTMP_AMF_STRING, "", (void *) "createStream", 0});
+    create_stream->push_back({XX_RTMP_AMF_NUMBER, "", (void *) &trans, 0});
+    create_stream->push_back({XX_RTMP_AMF_NULL, "", NULL, 0});
+
+    rtmp_header h;
+
+    xx_memzero(&h, sizeof(h));
+    h.csid = NGX_RTMP_RELAY_CSID_AMF_INI;
+    h.type = NGX_RTMP_MSG_AMF_CMD;
+
+    return send_amf(&h, create_stream);
+}
+
+void XXRtmp::send_publish() {
+    static double trans;
+
+    XXAmf *publish = new XXAmf();
+    publish->push_back({XX_RTMP_AMF_STRING, "", (void *) "publish", 0});
+    publish->push_back({XX_RTMP_AMF_NUMBER, "", (void *) &trans, 0});
+    publish->push_back({XX_RTMP_AMF_NULL, "", NULL, 0});
+    publish->push_back({XX_RTMP_AMF_STRING, "", "paht?", 0});
+    publish->push_back({XX_RTMP_AMF_STRING, "", (void *) "live", 0});
+
+    rtmp_header h;
+
+    xx_memzero(&h, sizeof(h));
+    h.csid = NGX_RTMP_RELAY_CSID_AMF_INI;
+    h.msid = NGX_RTMP_RELAY_MSID;
+    h.type = NGX_RTMP_MSG_AMF_CMD;
+
+    return send_amf(&h, publish);
+}
+
 void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
     ngx_int_t rc;
     std::list<xxbuf *> t;
@@ -414,43 +578,3 @@ void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
     prepare_message(h, NULL, t);
     send_message(t);
 }
-
-int XXRtmp::receive_message(xx_stream *pStream) {
-    LOGI("receive message ing");
-    rtmp_header *h = &pStream->header_;
-    if ( h->type == NGX_RTMP_MSG_CHUNK_SIZE) {
-        in_chunk_size = 4096;
-    } else if (h->type == NGX_RTMP_MSG_AMF_CMD) {
-        amf_message_handle(pStream);
-    }
-    return 0;
-}
-
-void XXRtmp::amf_message_handle(xx_stream *stream) {
-    static int i = 0;
-    if (i==0) {
-        send_create_stream();
-        i = 1;
-    }
-    else if (i==1) {
-
-    }
-}
-
-void XXRtmp::send_create_stream() {
-    static double trans = NGX_RTMP_RELAY_CREATE_STREAM_TRANS;
-
-    XXAmf *create_stream = new XXAmf();
-    create_stream->push_back( {XX_RTMP_AMF_STRING, "", (void*)"createStream", 0});
-    create_stream->push_back( {XX_RTMP_AMF_NUMBER, "", (void*)&trans, 0});
-    create_stream->push_back( {XX_RTMP_AMF_NULL, "", NULL, 0});
-
-    rtmp_header           h;
-
-    xx_memzero(&h, sizeof(h));
-    h.csid = NGX_RTMP_RELAY_CSID_AMF_INI;
-    h.type = NGX_RTMP_MSG_AMF_CMD;
-
-    return send_amf(&h, create_stream);
-}
-
