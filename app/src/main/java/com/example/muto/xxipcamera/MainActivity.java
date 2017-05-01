@@ -60,11 +60,11 @@ public class MainActivity extends AppCompatActivity {
             SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
             SurfaceHolder holder = surfaceView.getHolder();
             cam0 = new XXCamera(manager, holder, mJpegListener);
-            cam0.setJpegSize(new Size(4160,3120));
+            cam0.setJpegSize(new Size(4160, 3120));
         }
         {
             SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView2);
-            SurfaceHolder holder =surfaceView.getHolder();
+            SurfaceHolder holder = surfaceView.getHolder();
             cam1 = new XXCamera(manager, holder, mJpegListener);
             cam1.setJpegSize(new Size(1600, 1200));
         }
@@ -109,8 +109,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         if (mCurrentCamera == 0) {
                             cam0.takePicture();
-                        }
-                        else {
+                        } else {
                             cam1.takePicture();
                         }
                     }
@@ -125,8 +124,7 @@ public class MainActivity extends AppCompatActivity {
                             cam0.close();
                             cam1.open("2");
                             mCurrentCamera = 1;
-                        }
-                        else {
+                        } else {
                             cam1.close();
                             cam0.open("0");
                             mCurrentCamera = 0;
@@ -141,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         XXRtmpPublish publish = new XXRtmpPublish();
                         publish.connect();
+                        cam0.setRtmp(publish);
                     }
                 }
         );
@@ -178,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
         public void onImageAvailable(ImageReader reader) {
             Image image = reader.acquireNextImage();
             boolean success = false;
-            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),"JPEG_" + System.currentTimeMillis() + ".jpg");
+            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "JPEG_" + System.currentTimeMillis() + ".jpg");
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
@@ -211,6 +210,7 @@ public class MainActivity extends AppCompatActivity {
                         });
             }
         }
+
         private void showToast(String text) {
             // We show a Toast by sending request message to mMessageHandler. This makes sure that the
             // Toast is shown on the UI thread.

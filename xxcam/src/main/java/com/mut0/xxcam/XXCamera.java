@@ -33,8 +33,10 @@ import java.util.Comparator;
 public class XXCamera {
 
     private static final String TAG = "XXCamera";
-    private SurfaceHolder hodler;
 
+    private static final boolean EANBLE_ENCODER = true;
+
+    private SurfaceHolder hodler;
     private CameraManager manager;
     private Surface surface;
     private CameraDevice mCameraDevice;
@@ -56,6 +58,7 @@ public class XXCamera {
     private CaptureRequest mPreviewRequest;
     private ImageReader mJpegImageReader;
     private Size mJpegSize;
+    private XXRtmpPublish rtmp;
 
     public XXCamera(CameraManager manager, SurfaceHolder holder) {
         this.manager = manager;
@@ -116,6 +119,11 @@ public class XXCamera {
         }
     }
 
+    public void setRtmp(XXRtmpPublish rtmp) {
+        this.rtmp = rtmp;
+        encoder.setRtmp(rtmp);
+    }
+
     /**
      * Comparator based on area of the given {@link Size} objects.
      */
@@ -155,14 +163,15 @@ public class XXCamera {
             //PreviewSurface
             outputs.add(hodler.getSurface());
 
-            //preview imagereader
-            previewReader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 10);
-            previewReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
-            outputs.add(previewReader.getSurface());
+//            //preview imagereader
+//            previewReader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 10);
+//            previewReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
+//            outputs.add(previewReader.getSurface());
 
-//            encoder = new XXVEncoder();
-//            Surface surface2 = encoder.getSurface();
-//            previewReqBuilder.addTarget(surface2);
+            if (EANBLE_ENCODER) {
+                encoder = new XXVEncoder();
+                outputs.add(encoder.getSurface());
+            }
 
             //StillCaputre ImageReader
             mJpegImageReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.JPEG, /*maxImages*/1);
@@ -170,8 +179,6 @@ public class XXCamera {
             outputs.add(mJpegImageReader.getSurface());
 
             mCameraDevice.createCaptureSession(outputs, createSessionCallback_, mBackgroundHandler);
-
-//            encoder.start();
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -231,6 +238,10 @@ public class XXCamera {
             try {
                 previewReqBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 previewReqBuilder.addTarget(hodler.getSurface());
+                if (EANBLE_ENCODER) {
+                    previewReqBuilder.addTarget(encoder.getSurface());
+                    encoder.start();
+                }
 //                previewReqBuilder.addTarget(previewReader.getSurface());
 
                 mPreviewRequest = previewReqBuilder.build();

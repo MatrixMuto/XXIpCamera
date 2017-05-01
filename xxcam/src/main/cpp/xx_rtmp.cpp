@@ -22,6 +22,7 @@ XXRtmp::XXRtmp() {
     io = new xxio();
     in_chunk_size = 128;
     in_streams = new xx_stream[128];
+    can_publish_ = false;
 }
 
 XXRtmp::~XXRtmp() {
@@ -43,10 +44,13 @@ int XXRtmp::CreateSession() {
 
 void XXRtmp::FiniliazeSession() {
     LOGE("Oh My God\n\t*\n\t*\n\t*\n");
+    if (io->read_->active) {
+        io->deleteEvnet(io->read_);
+    }
 }
 
-void XXRtmp::video(uint8_t *data) {
-    io->Write(data);
+void XXRtmp::video(uint8_t *data, long long int i) {
+    sendVideo();
 }
 
 /* Callback from io thread. */
@@ -222,6 +226,8 @@ void XXRtmp::Recv(event *rev) {
 
             } else {
                 /*add used buf to stream0*/
+                xx_stream *st0 = &in_streams[0];
+
                 stream->some_.clear();
             }
         }
@@ -467,9 +473,9 @@ void XXRtmp::amf_message_handle(xx_stream *stream) {
     if (func == "_result") {
         on_result(amf);
     } else if (func == "_error") {
-        on_error();
+        on_error(amf);
     } else if (func == "onStatus") {
-        on_status();
+        on_status(amf);
     }
 }
 
@@ -479,8 +485,11 @@ void XXRtmp::protocol_message_handler() {
 }
 
 void XXRtmp::on_result(XXAmf *pAmf) {
+    LOGI("on_result E");
     double trans;
     pAmf->GetTrans(&trans);
+    LOGI("GetTrans trans %f", trans);
+
     switch ((int) trans) {
         case NGX_RTMP_RELAY_CONNECT_TRANS:
             send_create_stream();
@@ -489,15 +498,16 @@ void XXRtmp::on_result(XXAmf *pAmf) {
             send_publish();
             break;
     }
+    LOGI("on_result X");
 }
 
-void XXRtmp::on_error() {
+void XXRtmp::on_error(XXAmf *pAmf) {
 
 }
 
 
-void XXRtmp::on_status() {
-
+void XXRtmp::on_status(XXAmf *pAmf) {
+    can_publish_ = true;
 }
 
 void XXRtmp::SendConnect() {
@@ -530,7 +540,7 @@ void XXRtmp::SendConnect() {
 
 void XXRtmp::send_create_stream() {
     static double trans = NGX_RTMP_RELAY_CREATE_STREAM_TRANS;
-
+    LOGI("send_create_stream");
     XXAmf *create_stream = new XXAmf();
     create_stream->push_back({XX_RTMP_AMF_STRING, "", (void *) "createStream", 0});
     create_stream->push_back({XX_RTMP_AMF_NUMBER, "", (void *) &trans, 0});
@@ -577,4 +587,8 @@ void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
     }
     prepare_message(h, NULL, t);
     send_message(t);
+}
+
+void XXRtmp::sendVideo() {
+    LOGI("sendVideo");
 }

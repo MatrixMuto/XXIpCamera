@@ -31,13 +31,15 @@ public class XXRtmpPublish {
     void disconnect(){
         native_disconnect();
     }
-    public void eatVideo(ByteBuffer byteBuffer, MediaCodec.BufferInfo info) {
-        native_eatVideo(byteBuffer);
+
+    public void eatVideo(ByteBuffer byteBuffer, int remaining, MediaCodec.BufferInfo info) {
+        native_eatVideo(byteBuffer, remaining, info.offset, info.flags, info.presentationTimeUs);
     }
     private native void native_addTarget(String url);
     private native void native_connect();
     private native void native_disconnect();
-    private native void native_eatVideo(ByteBuffer byteBuffer);
+
+    private native void native_eatVideo(ByteBuffer byteBuffer, int remaining, int offset, int flags, long presentationTimeUs);
 
 
 }

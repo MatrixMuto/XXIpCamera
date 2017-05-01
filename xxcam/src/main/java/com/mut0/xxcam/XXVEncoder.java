@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 public class XXVEncoder {
 
     private static final String TAG = "XXVEncoder";
-    private final XXRtmpPublish rtmp;
+    private XXRtmpPublish rtmp;
     private Surface surface;
     MediaCodec codec;
 
@@ -75,7 +75,7 @@ public class XXVEncoder {
             }
 
             if (rtmp != null) {
-                rtmp.eatVideo(byteBuffer, info);
+                rtmp.eatVideo(byteBuffer, byteBuffer.remaining(), info);
             }
 
             codec.releaseOutputBuffer(index, false);
@@ -91,4 +91,8 @@ public class XXVEncoder {
             Log.d(TAG, "onOutputFormatChanged " + format.toString());
         }
     };
+
+    public void setRtmp(XXRtmpPublish rtmp) {
+        this.rtmp = rtmp;
+    }
 }

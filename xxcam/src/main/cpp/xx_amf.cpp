@@ -678,7 +678,9 @@ int XXAmf::read_internal(void *data) {
             if (Get(buf, 8) != XX_OK) {
                 return XX_ERROR;
             }
+            LOGI("amf number 1");
             ngx_rtmp_amf_reverse_copy(data, buf, 8);
+            LOGI("amf number 2");
             break;
 
         case XX_RTMP_AMF_BOOLEAN:
