@@ -18,6 +18,7 @@
 #define NGX_RTMP_RELAY_CSID_AMF                 5
 #define NGX_RTMP_RELAY_MSID                     1
 
+/* Called in User thread */
 XXRtmp::XXRtmp() {
     io = new xxio();
     in_chunk_size = 128;
@@ -37,10 +38,21 @@ int XXRtmp::CreateSession() {
 
     SendChallenge();
 
+
     io->start();
 
     return 0;
 }
+
+void XXRtmp::video(uint8_t *data, int64_t i) {
+    std::list<xxbuf *> out;
+    xx_flv->onVideo(data, n, &out);
+    rtmp_header h;
+    prepare_message(&h, NULL, out);
+    sendVideo();
+}
+
+/* Callback from io thread. */
 
 void XXRtmp::FiniliazeSession() {
     LOGE("Oh My God\n\t*\n\t*\n\t*\n");
@@ -48,12 +60,6 @@ void XXRtmp::FiniliazeSession() {
         io->deleteEvnet(io->read_);
     }
 }
-
-void XXRtmp::video(uint8_t *data, long long int i) {
-    sendVideo();
-}
-
-/* Callback from io thread. */
 
 void XXRtmp::OnConnect(event *ev) {
     LOGI("OnConnect r:%d w:%d", ev->read, ev->write);
@@ -508,6 +514,8 @@ void XXRtmp::on_error(XXAmf *pAmf) {
 
 void XXRtmp::on_status(XXAmf *pAmf) {
     can_publish_ = true;
+
+    send_metadata();
 }
 
 void XXRtmp::SendConnect() {
@@ -591,4 +599,8 @@ void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
 
 void XXRtmp::sendVideo() {
     LOGI("sendVideo");
+}
+
+void XXRtmp::send_metadata() {
+
 }
