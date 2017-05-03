@@ -13,9 +13,11 @@
 #define NGX_RTMP_RELAY_CONNECT_TRANS            1
 #define NGX_RTMP_RELAY_CREATE_STREAM_TRANS      2
 
-
+#define NGX_RTMP_MSID                   1
 #define NGX_RTMP_RELAY_CSID_AMF_INI             3
 #define NGX_RTMP_RELAY_CSID_AMF                 5
+#define NGX_RTMP_CSID_AUDIO             6
+#define NGX_RTMP_CSID_VIDEO             7
 #define NGX_RTMP_RELAY_MSID                     1
 
 /* Called in User thread */
@@ -45,11 +47,32 @@ int XXRtmp::CreateSession() {
 }
 
 void XXRtmp::video(uint8_t *data, int64_t i) {
-    std::list<xxbuf *> out;
-    xx_flv->onVideo(data, n, &out);
-    rtmp_header h;
-    prepare_message(&h, NULL, out);
-    sendVideo();
+    if (can_publish_) {
+        std::list<xxbuf *> out;
+//    xx_flv->onVideo(data, n, &out);
+        xxbuf *buf = new xxbuf(4096);
+        buf->pos += 20;
+        LOGI("-------- 1");
+        memcpy(buf->pos, data, i);
+        LOGI("-------- 2");
+
+        buf->last += i;
+
+        rtmp_header h;
+        h.msid = NGX_RTMP_MSID;
+
+
+        h.csid = NGX_RTMP_CSID_VIDEO;
+        h.mlen = i;
+        h.type = NGX_RTMP_MSG_VIDEO;
+
+        out.push_back(buf);
+        LOGI("-------- 3");
+        prepare_message(&h, NULL, out);
+        LOGI("-------- 4");
+        send_message(out);
+        LOGI("-------- 5");
+    }
 }
 
 /* Callback from io thread. */
@@ -603,4 +626,41 @@ void XXRtmp::sendVideo() {
 
 void XXRtmp::send_metadata() {
 
+    static struct {
+        double                      width;
+        double                      height;
+        double                      duration;
+        double                      video_codec_id;
+        double                      audio_codec_id;
+        double                      audio_sample_rate;
+    }                               v;
+
+
+    XXAmf *obj = new XXAmf();
+    obj->push_back({XX_RTMP_AMF_NUMBER, "width", (void *) &v.width, 0});
+    obj->push_back({XX_RTMP_AMF_NUMBER, "height", (void *) &v.height, 0});
+    obj->push_back({XX_RTMP_AMF_NUMBER, "displayWidth",(void *) &v.width , 0});
+    obj->push_back({XX_RTMP_AMF_NUMBER, "displayHeight", (void *) &v.height, 0});
+    obj->push_back({XX_RTMP_AMF_NUMBER, "duration", (void *) &v.duration, 0});
+    obj->push_back({XX_RTMP_AMF_NUMBER, "videocodecid", (void *) &v.audio_codec_id, 0});
+    obj->push_back({XX_RTMP_AMF_NUMBER, "audiocodecid", (void *) &v.audio_sample_rate, 0});
+
+    XXAmf *metadata = new XXAmf();
+    metadata->push_back({XX_RTMP_AMF_STRING, "", (void *) "onMetaData", 0});
+    metadata->push_back({XX_RTMP_AMF_OBJECT, "", (void *) obj, 0});
+
+    v.width = 640;
+    v.height = 480;
+    v.duration = 0;
+    v.audio_codec_id = 1;
+    v.video_codec_id = 2;
+
+    rtmp_header h;
+    xx_memzero(&h, sizeof(h));
+    h.csid = NGX_RTMP_RELAY_CSID_AMF;
+    h.msid = NGX_RTMP_RELAY_MSID;
+    h.type = NGX_RTMP_MSG_AMF_META;
+
+
+    send_amf(&h, metadata);
 }

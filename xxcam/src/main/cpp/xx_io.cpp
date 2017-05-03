@@ -46,7 +46,7 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     }
 
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    addr.sin_addr.s_addr = inet_addr("192.168.1.111");
     addr.sin_port = htons(1935);
 
     rc = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));

@@ -74,7 +74,8 @@ void XXRtmp::handshake_send(event *wev) {
         }
 
         if (n == XX_AGAIN || n == 0) {
-            LOGE("send return %ld", n);
+            LOGE("send AGAIN %ld", n);
+            io->HandleWriteEvnet(0);
             return;
         }
         b->pos += n;
@@ -85,7 +86,7 @@ void XXRtmp::handshake_send(event *wev) {
     }
 
     ++state_;
-
+    LOGI("handshake_send state %d",state_);
     switch (state_) {
         case NGX_RTMP_HANDSHAKE_CLIENT_RECV_CHALLENGE:
             hs_buf->pos = hs_buf->last = hs_buf->start;
@@ -117,7 +118,8 @@ void XXRtmp::handshake_recv(event *rev) {
 //            if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
 //                ngx_rtmp_finalize_session(s);
 //            }
-            LOGI("read again");
+            io->HandleReadEvnet(0);
+            LOGI("handshake_recv read again");
             return;
         }
 
@@ -129,7 +131,7 @@ void XXRtmp::handshake_recv(event *rev) {
     }
 
     ++state_;
-
+    LOGI("handshake_recv state %d",state_);
     switch (state_) {
         case NGX_RTMP_HANDSHAKE_CLIENT_RECV_RESPONSE:
             hs_buf->pos = hs_buf->last = hs_buf->start + 1;
