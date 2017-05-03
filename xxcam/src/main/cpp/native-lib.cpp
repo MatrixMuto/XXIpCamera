@@ -35,15 +35,17 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1addTarget(JNIEnv *env, jobject instanc
 
 JNIEXPORT void JNICALL
 Java_com_mut0_xxcam_XXRtmpPublish_native_1eatVideo(JNIEnv *env, jobject instance,
-                                                   jobject byteBuffer, jint remaining, jint offset,
+                                                   jobject byteBuffer, jint pos, jint remaining,
+                                                   jint offset,
                                                    jint flags,
                                                    jlong presentationTimeUs) {
 
     uint8_t *data = (uint8_t *) env->GetDirectBufferAddress(byteBuffer);
     jlong n = env->GetDirectBufferCapacity(byteBuffer);
-    LOGE("data %p, len %ld, offset %d, flags %x, pts %ld", data, remaining, offset, flags,
+    LOGE("data %p, pos %ld, len %ld, offset %d, flags %x, pts %ld", data, pos, remaining, offset,
+         flags,
          presentationTimeUs);
-    rtmp->video(data, n);
+    rtmp->video(data, pos, remaining, flags, presentationTimeUs);
 }
 
 JNIEXPORT void JNICALL

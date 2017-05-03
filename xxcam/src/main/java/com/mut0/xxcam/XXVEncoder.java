@@ -75,7 +75,7 @@ public class XXVEncoder {
             }
 
             if (rtmp != null) {
-                rtmp.eatVideo(byteBuffer, byteBuffer.remaining(), info);
+                rtmp.eatVideo(byteBuffer, byteBuffer.position(), byteBuffer.remaining(), info);
             }
 
             codec.releaseOutputBuffer(index, false);
@@ -94,5 +94,6 @@ public class XXVEncoder {
 
     public void setRtmp(XXRtmpPublish rtmp) {
         this.rtmp = rtmp;
+        start();
     }
 }

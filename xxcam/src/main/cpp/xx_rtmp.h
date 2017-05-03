@@ -38,7 +38,7 @@ public:
 
     int CreateSession();
 
-    void video(uint8_t *data, int64_t i);
+    void video(uint8_t *data, int pos, int n, int flags, long long int ts);
 
     static void OnConnect(event *ev);
 
@@ -122,6 +122,8 @@ private:
 
 
     void send_metadata();
+
+    int64_t start_;
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H

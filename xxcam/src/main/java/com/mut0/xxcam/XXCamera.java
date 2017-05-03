@@ -240,7 +240,7 @@ public class XXCamera {
                 previewReqBuilder.addTarget(hodler.getSurface());
                 if (EANBLE_ENCODER) {
                     previewReqBuilder.addTarget(encoder.getSurface());
-                    encoder.start();
+//                    encoder.start();
                 }
 //                previewReqBuilder.addTarget(previewReader.getSurface());
 

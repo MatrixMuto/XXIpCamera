@@ -786,6 +786,7 @@ int XXAmf::read_object() {
 XXAmf::XXAmf(std::list<xxbuf *> *buf) {
     in = buf;
     it_ = buf->begin();
+    offset_ = 0;
 }
 
 void XXAmf::GetFunc(std::string &string) {

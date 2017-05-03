@@ -32,14 +32,14 @@ public class XXRtmpPublish {
         native_disconnect();
     }
 
-    public void eatVideo(ByteBuffer byteBuffer, int remaining, MediaCodec.BufferInfo info) {
-        native_eatVideo(byteBuffer, remaining, info.offset, info.flags, info.presentationTimeUs);
+    public void eatVideo(ByteBuffer byteBuffer, int position, int remaining, MediaCodec.BufferInfo info) {
+        native_eatVideo(byteBuffer, position, remaining, info.offset, info.flags, info.presentationTimeUs);
     }
     private native void native_addTarget(String url);
     private native void native_connect();
     private native void native_disconnect();
 
-    private native void native_eatVideo(ByteBuffer byteBuffer, int remaining, int offset, int flags, long presentationTimeUs);
+    private native void native_eatVideo(ByteBuffer byteBuffer, int position, int remaining, int offset, int flags, long presentationTimeUs);
 
 
 }

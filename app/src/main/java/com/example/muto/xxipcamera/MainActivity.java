@@ -44,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE_CAMERA = 1;
     XXCamera cam0, cam1;
     int mCurrentCamera = 0;
+    private int rtmpState = 0;
+    private XXRtmpPublish publish;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -137,9 +139,13 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        XXRtmpPublish publish = new XXRtmpPublish();
-                        publish.connect();
-                        cam0.setRtmp(publish);
+                        if (rtmpState == 0) {
+                            publish = new XXRtmpPublish();
+                            publish.connect();
+                            rtmpState = 1;
+                        } else {
+                            cam0.setRtmp(publish);
+                        }
                     }
                 }
         );

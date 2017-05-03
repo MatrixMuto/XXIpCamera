@@ -46,32 +46,37 @@ int XXRtmp::CreateSession() {
     return 0;
 }
 
-void XXRtmp::video(uint8_t *data, int64_t i) {
+void XXRtmp::video(uint8_t *data, int pos, int n, int flag, long long int ts) {
     if (can_publish_) {
+        if (flag == 2) {
+            start_ = ts;
+        }
         std::list<xxbuf *> out;
 //    xx_flv->onVideo(data, n, &out);
-        xxbuf *buf = new xxbuf(4096);
+        xxbuf *buf = new xxbuf(8192);
         buf->pos += 20;
-        LOGI("-------- 1");
-        memcpy(buf->pos, data, i);
-        LOGI("-------- 2");
+        buf->last += 20;
+        u_char type = flag == 8 ? 2 : 1;
+        type = (type << 4) | 7;
+        u_char avc_packet_type = flag == 2 ? 0 : 1;
+        int time = 0;
+        LOGI("time: %d", time);
+        buf->last = xx_cpymem(buf->last, &type, 1);
+        buf->last = xx_cpymem(buf->last, &avc_packet_type, 1);
+        buf->last = xx_cpymem(buf->last, (((u_char *) &time)), 3);
+        buf->last = xx_cpymem(buf->last, data + pos, n);
 
-        buf->last += i;
 
         rtmp_header h;
         h.msid = NGX_RTMP_MSID;
-
-
+//        h.timestamp = ts - start_;
         h.csid = NGX_RTMP_CSID_VIDEO;
-        h.mlen = i;
+//        h.mlen = buf->last - buf->pos;
         h.type = NGX_RTMP_MSG_VIDEO;
 
         out.push_back(buf);
-        LOGI("-------- 3");
         prepare_message(&h, NULL, out);
-        LOGI("-------- 4");
         send_message(out);
-        LOGI("-------- 5");
     }
 }
 
@@ -79,6 +84,7 @@ void XXRtmp::video(uint8_t *data, int64_t i) {
 
 void XXRtmp::FiniliazeSession() {
     LOGE("Oh My God\n\t*\n\t*\n\t*\n");
+    can_publish_ = false;
     if (io->read_->active) {
         io->deleteEvnet(io->read_);
     }
@@ -108,7 +114,7 @@ void XXRtmp::handshake_done() {
     io->SetReadHandler(RtmpRecv, this);
     io->SetWriteHandler(RtmpSend, this);
 
-    SendChunkSize(4096);
+    SendChunkSize(8192);
     SendAckWindowSize(5000000);
     SendConnect();
 
@@ -137,7 +143,7 @@ void XXRtmp::Recv(event *rev) {
         stream = &in_streams[in_csid];
 
         if (stream->some_.empty()) {
-            xxbuf *bb = new xxbuf(in_chunk_size + 20);
+            xxbuf *bb = new xxbuf(4096 + 20);
             stream->some_.push_back(bb);
         }
 
@@ -246,6 +252,7 @@ void XXRtmp::Recv(event *rev) {
             old_size = size - fsize;
             stream->len_ = 0;
 
+            LOGI("oldsize %u", old_size);
             if (receive_message(stream) != XX_OK) {
                 FiniliazeSession();
                 return;
@@ -494,6 +501,7 @@ int XXRtmp::receive_message(xx_stream *stream) {
 
 void XXRtmp::amf_message_handle(xx_stream *stream) {
     static int i = 0;
+    LOGI(" stream bufs size %d", stream->some_.size());
     XXAmf *amf = new XXAmf(&stream->some_);
     std::string func;
 //    XXAmfElt *elt = new XXAmfElt();
