@@ -42,8 +42,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private static final int PERMISSION_REQUEST_CODE_CAMERA = 1;
-    XXCamera cam0, cam1;
-    int mCurrentCamera = 0;
+    private XXCamera cam0, cam1;
+    private int mCurrentCamera = 0;
     private int rtmpState = 0;
     private XXRtmpPublish publish;
 
@@ -139,12 +139,21 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (rtmpState == 0) {
-                            publish = new XXRtmpPublish();
-                            publish.connect();
-                            rtmpState = 1;
-                        } else {
-                            cam0.setRtmp(publish);
+                        switch (rtmpState) {
+                            case 0:
+                                publish = new XXRtmpPublish();
+                                publish.connect();
+                                rtmpState = 1;
+                                break;
+                            case 1:
+                                cam0.startEncoder();
+                                cam0.setRtmp(publish);
+                                rtmpState = 2;
+                                break;
+                            case 2:
+                                cam0.stopEncoder();
+                                rtmpState = 0;
+                                break;
                         }
                     }
                 }
@@ -159,11 +168,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
+        Log.d(TAG, "onResume");
         super.onResume();
     }
 
     @Override
     protected void onPause() {
+        Log.d(TAG, "onPause");
         super.onPause();
     }
 

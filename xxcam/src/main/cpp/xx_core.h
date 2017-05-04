@@ -56,7 +56,7 @@ struct ngx_buf_s {
     off_t file_pos;
     off_t file_last;
 
-    u_char *start;         /* start of buffer */
+    u_char *start;         /* Start of buffer */
     u_char *end;           /* end of buffer */
     ngx_buf_tag_t tag;
     ngx_buf_t *shadow;

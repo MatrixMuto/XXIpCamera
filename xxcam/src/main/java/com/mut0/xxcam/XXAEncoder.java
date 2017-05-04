@@ -24,7 +24,7 @@ public class XXAEncoder {
         MediaFormat format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 48000, 2);
         format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
         format.setInteger(MediaFormat.KEY_BIT_RATE, 48000);
-        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+//        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
 
 //        String encoder_type = list.findEncoderForFormat(format);
 

@@ -27,7 +27,7 @@ public class XXVEncoder {
     }
 
     public XXVEncoder(XXRtmpPublish rtmp) {
-        MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 640, 480);
+        MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 320, 240);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_BIT_RATE, 40000);
         format.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
@@ -75,7 +75,7 @@ public class XXVEncoder {
             }
 
             if (rtmp != null) {
-                rtmp.eatVideo(byteBuffer, byteBuffer.position(), byteBuffer.remaining(), info);
+                rtmp.eatVideo(byteBuffer,  info);
             }
 
             codec.releaseOutputBuffer(index, false);
