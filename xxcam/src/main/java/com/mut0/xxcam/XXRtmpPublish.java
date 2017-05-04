@@ -24,8 +24,8 @@ public class XXRtmpPublish {
     }
 
 
-    public void connect() {
-        native_connect();
+    public void connect(String url) {
+        native_connect(url);
     }
 
     void disconnect() {
@@ -38,7 +38,7 @@ public class XXRtmpPublish {
 
     private native void native_addTarget(String url);
 
-    private native void native_connect();
+    private native void native_connect(String url);
 
     private native void native_disconnect();
 

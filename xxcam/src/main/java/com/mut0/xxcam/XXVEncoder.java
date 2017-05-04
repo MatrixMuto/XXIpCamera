@@ -27,13 +27,11 @@ public class XXVEncoder {
     }
 
     public XXVEncoder(XXRtmpPublish rtmp) {
-        MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 320, 240);
+        MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 960, 540);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, 40000);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
-        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 60);
-
-        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, 1000000);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, 20);
+        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
 
         try {
             codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);

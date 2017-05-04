@@ -26,55 +26,75 @@ XXRtmp::XXRtmp() {
     in_chunk_size = 128;
     in_streams = new xx_stream[128];
     can_publish_ = false;
+    out_chunk_size_ = 4096;
 }
 
 XXRtmp::~XXRtmp() {
     delete io;
 }
 
-int XXRtmp::CreateSession() {
+int XXRtmp::CreateSession(const char *url) {
+    int err;
     in_csid = 0;
-    std::string url = "rtmp://127.0.0.1:1935/live/test";
 
-    io->Connect(url, OnConnect, this);
+
+    err = parse(url);
+    if (err) {
+        return err;
+    }
+
+    io->Connect(ip_, OnConnect, this);
 
     SendChallenge();
 
 
     io->Start();
 
-    return 0;
+    return XX_OK;
 }
 
-void XXRtmp::video(uint8_t *data, int pos, int n, int flag, long long int ts) {
+void XXRtmp::video(uint8_t *data, int n, int flag, long long int ts) {
+
     if (can_publish_) {
-        if (flag == 2) {
-            start_ = ts;
-        }
+        int copy;
         std::list<xxbuf *> out;
-//    xx_flv->onVideo(data, n, &out);
-        xxbuf *buf = new xxbuf(8192);
+        xxbuf *buf;
+        int time = 0;
+        uint8_t *pos, *end;
+
+        buf = new xxbuf(20 + out_chunk_size_);
         buf->pos += 20;
         buf->last += 20;
         u_char type = flag == 8 ? 2 : 1;
         type = (type << 4) | 7;
         u_char avc_packet_type = flag == 2 ? 0 : 1;
-        int time = 0;
-        LOGI("time: %d", time);
+
         buf->last = xx_cpymem(buf->last, &type, 1);
         buf->last = xx_cpymem(buf->last, &avc_packet_type, 1);
         buf->last = xx_cpymem(buf->last, (((u_char *) &time)), 3);
-        buf->last = xx_cpymem(buf->last, data + pos, n);
 
+        pos = data;
+        end = data + n;
+        for (;;) {
+            copy = ngx_min(end - pos, buf->end - buf->last);
+            buf->last = xx_cpymem(buf->last, pos, copy);
+            pos += copy;
+            out.push_back(buf);
+            if (pos < end) {
+                buf = new xxbuf(20 + out_chunk_size_);
+                buf->pos += 20;
+                buf->last = buf->pos;
+            } else {
+                break;
+            }
+        }
 
         rtmp_header h;
         h.msid = NGX_RTMP_MSID;
 //        h.timestamp = ts - start_;
         h.csid = NGX_RTMP_CSID_VIDEO;
-//        h.mlen = buf->last - buf->pos;
         h.type = NGX_RTMP_MSG_VIDEO;
 
-        out.push_back(buf);
         prepare_message(&h, NULL, out);
         send_message(out);
     }
@@ -114,7 +134,7 @@ void XXRtmp::handshake_done() {
     io->SetReadHandler(RtmpRecv, this);
     io->SetWriteHandler(RtmpSend, this);
 
-    SendChunkSize(8192);
+    SendChunkSize(out_chunk_size_);
     SendAckWindowSize(5000000);
     SendConnect();
 
@@ -463,13 +483,12 @@ void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, std::list<xxbuf *>
 //            thsize += 4;
 //        }
     }
-
-//    /* append headers to successive fragments */
-//    for(out = out->next; out; out = out->next) {
-//        out->buf->pos -= thsize;
-//        memcpy(out->buf->pos, th, thsize);
-//    }
-
+    it = out.begin();
+    it++;
+    for (; it != out.end(); ++it) {
+        (*it)->pos -= thsize;
+        memcpy((*it)->pos, th, thsize);
+    }
 }
 
 void XXRtmp::handle_rtmp_other_event() {
@@ -671,4 +690,29 @@ void XXRtmp::send_metadata() {
 
 
     send_amf(&h, metadata);
+}
+
+int XXRtmp::parse(const char *url) {
+    char *p = strstr(url, "://");
+    if (!p) {
+        return XX_ERROR;
+    }
+    char *ip = p + 3;
+    char *app = strstr(ip, "/") + 1;
+    if (!app) {
+        return XX_ERROR;
+    }
+    *(app - 1) = 0;
+    char *name = strstr(app, "/") + 1;
+    if (!name) {
+        return XX_ERROR;
+    }
+    *(name - 1) = 0;
+
+    ip_ = ip;
+    app_ = app;
+    name_ = name;
+    LOGI("%s %s %s", ip, app, name);
+
+    return XX_OK;
 }

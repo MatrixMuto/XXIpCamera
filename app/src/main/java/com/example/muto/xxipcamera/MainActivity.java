@@ -17,6 +17,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
 import android.util.Log;
 import android.util.Size;
 import android.view.SurfaceHolder;
@@ -25,6 +26,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.mut0.xxcam.XXCamera;
@@ -46,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private int mCurrentCamera = 0;
     private int rtmpState = 0;
     private XXRtmpPublish publish;
+    private String url;
+    private EditText editText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+        editText = (EditText) findViewById(R.id.editText);
         Button btnPublish = (Button) findViewById(R.id.btnPublish);
         btnPublish.setOnClickListener(
                 new View.OnClickListener() {
@@ -142,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
                         switch (rtmpState) {
                             case 0:
                                 publish = new XXRtmpPublish();
-                                publish.connect();
+                                publish.connect(editText.getText().toString());
                                 rtmpState = 1;
                                 break;
                             case 1:

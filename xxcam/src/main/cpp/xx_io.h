@@ -41,7 +41,7 @@ public:
     xxio();
     ~xxio();
 
-    int Connect(std::string &address, event_handler_pt callback, void *data);
+    int Connect(std::string &ip, event_handler_pt callback, void *data);
 
     static void* loop_enter(void*);
 
@@ -89,6 +89,8 @@ private:
     event* events_[128];
     int nevents_;
     std::deque<event*> queue_;
+
+
 };
 
 #endif //XXIPCAMERA_XXIO_H

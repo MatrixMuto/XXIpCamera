@@ -30,15 +30,15 @@
 #define NGX_RTMP_MSG_MAX                22
 
 
-
 class XXRtmp {
 public:
     XXRtmp();
+
     ~XXRtmp();
 
-    int CreateSession();
+    int CreateSession(const char *string);
 
-    void video(uint8_t *data, int pos, int n, int flags, long long int ts);
+    void video(uint8_t *pos, int n, int flag, long long int ts);
 
     static void OnConnect(event *ev);
 
@@ -55,7 +55,10 @@ public:
 private:
     void SendChallenge();
 
+    void FiniliazeSession();
+
     void handshake_send(event *ev);
+
     void handshake_recv(event *rev);
 
     void handshake_done();
@@ -84,29 +87,11 @@ private:
 
     void send_message(std::list<xxbuf *> &out2);
 
-private:
-    xxio *io;
-    xxbuf *hs_buf;
-    int state_;
-    int epoch;
-    std::list<xxbuf *> out;
-
-    xx_stream *in_streams;
-    int in_csid;
-
-    void FiniliazeSession();
-
-    size_t in_chunk_size;
-
     int receive_message(xx_stream *pStream);
 
     void amf_message_handle(xx_stream *stream);
 
     void send_create_stream();
-
-    void protocol_message_handler();
-
-    uint64_t in_bytes;
 
     void on_result(XXAmf *pAmf);
 
@@ -116,14 +101,33 @@ private:
 
     void on_status(XXAmf *pAmf);
 
-    bool can_publish_;
+    void protocol_message_handler();
 
     void sendVideo();
 
-
     void send_metadata();
 
+private:
+    xxio *io;
+    xxbuf *hs_buf;
+    int state_;
+    int epoch;
+    std::list<xxbuf *> out;
+    xx_stream *in_streams;
+    int in_csid;
+
+
+    size_t in_chunk_size;
+    uint64_t in_bytes;
+    bool can_publish_;
     int64_t start_;
+    size_t out_chunk_size_;
+
+    int parse(const char *url);
+
+    std::string ip_;
+    std::string app_;
+    std::string name_;
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H

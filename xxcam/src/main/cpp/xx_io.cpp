@@ -16,7 +16,7 @@ xxio::~xxio() {
 
 }
 
-int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
+int xxio::Connect(std::string &ip, event_handler_pt callback, void *data) {
     int err, rc;
     int flags;
     struct sockaddr_in addr;
@@ -46,7 +46,7 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     }
 
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("192.168.1.111");
+    addr.sin_addr.s_addr = inet_addr(ip.c_str());
     addr.sin_port = htons(1935);
 
     rc = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));
