@@ -8,15 +8,15 @@
 
     <SurfaceView
         android:id="@+id/surfaceView"
-        android:layout_width="160dp"
-        android:layout_height="200dp"
-        tools:layout_editor_absoluteX="12dp"
-        tools:layout_editor_absoluteY="21dp"
+        android:layout_width="210dp"
+        android:layout_height="280dp"
+        android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true" />
+        tools:layout_editor_absoluteX="12dp"
+        tools:layout_editor_absoluteY="21dp" />
     <SurfaceView
         android:id="@+id/surfaceView2"
-        android:layout_width="200dp"
+        android:layout_width="210dp"
         android:layout_height="160dp"
         tools:layout_editor_absoluteX="12dp"
         tools:layout_editor_absoluteY="190dp"
@@ -27,36 +27,37 @@
         android:id="@+id/btnCapture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
         android:text="Capture"
         tools:layout_editor_absoluteX="136dp"
-        tools:layout_editor_absoluteY="417dp" />
+        tools:layout_editor_absoluteY="417dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true" />
 
     <Button
         android:id="@+id/btnSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Switch"
-        android:layout_above="@+id/btnCapture"
-        android:layout_alignParentStart="true" />
+        android:layout_below="@+id/btnCapture"
+        android:layout_alignParentEnd="true" />
 
     <Button
         android:id="@+id/btnPublish"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/btnCapture"
-        android:text="publish" />
+        android:text="publish"
+        android:layout_below="@+id/btnSwitch"
+        android:layout_alignParentEnd="true" />
 
     <EditText
         android:id="@+id/editText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
         android:ems="10"
-        android:inputType="number"
+        android:inputType="textPersonName"
+        android:text="rtmp://192.168.55.106/live/test"
+        android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:layout_toEndOf="@+id/btnPublish" />
+        android:layout_alignParentStart="true" />
 
 </RelativeLayout>
