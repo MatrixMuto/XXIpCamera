@@ -100,7 +100,7 @@ public class XXCamera {
             String[] camidlist = manager.getCameraIdList();
             String back_id = null;
             for (String id : camidlist) {
-                Log.d(TAG,"camera mCameraId =[" + id +"]");
+                Log.d(TAG, "camera mCameraId =[" + id + "]");
                 CameraCharacteristics cc = manager.getCameraCharacteristics(id);
 
                 StreamConfigurationMap map = cc.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -112,11 +112,12 @@ public class XXCamera {
                 Log.d(TAG, "max jpeg " + largestJpeg.getWidth() + largestJpeg.getHeight() + " " + mSensorOrientation);
 
             }
-            manager.openCamera(cameraId, cam_dev_cb, mBackgroundHandler);
+            manager.openCamera(cameraId, deviceCallback, mBackgroundHandler);
 
-        } catch (CameraAccessException e) {
+        } catch (CameraAccessException | SecurityException | NullPointerException e) {
             e.printStackTrace();
         }
+
     }
 
     public void setRtmp(XXRtmpPublish rtmp) {
@@ -153,14 +154,15 @@ public class XXCamera {
         }
 
         surface = null;
-
-        stopBackgroundThread();
+        if (null != mBackgroundThread) {
+            stopBackgroundThread();
+        }
     }
 
-    private void startPreivew() {
+    private void createCaptureSession() {
         try {
             ArrayList<Surface> outputs = new ArrayList<>();
-            //PreviewSurface
+
             outputs.add(hodler.getSurface());
 
 //            //preview imagereader
@@ -178,14 +180,36 @@ public class XXCamera {
             mJpegImageReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
             outputs.add(mJpegImageReader.getSurface());
 
-            mCameraDevice.createCaptureSession(outputs, createSessionCallback_, mBackgroundHandler);
+            mCameraDevice.createCaptureSession(outputs, captureSessionCallback, mBackgroundHandler);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
-    CameraDevice.StateCallback cam_dev_cb = new CameraDevice.StateCallback() {
+    public void startEncoder(){
+
+        previewReqBuilder.addTarget(encoder.getSurface());
+        mPreviewRequest = previewReqBuilder.build();
+        try {
+            mCaptureSession.setRepeatingRequest(mPreviewRequest, previewCaptureCallback, mBackgroundHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void stopEncoder() {
+        previewReqBuilder.removeTarget(encoder.getSurface());
+        mPreviewRequest = previewReqBuilder.build();
+        try {
+            mCaptureSession.setRepeatingRequest(mPreviewRequest, previewCaptureCallback, mBackgroundHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private CameraDevice.StateCallback deviceCallback = new CameraDevice.StateCallback() {
 
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
@@ -193,8 +217,16 @@ public class XXCamera {
             mCameraDevice = camera;
 
             if (surface != null) {
-                startPreivew();
+                createCaptureSession();
             }
+
+        }
+
+        @Override
+        public void onClosed(@NonNull CameraDevice camera) {
+            super.onClosed(camera);
+            Log.d(TAG, "onClosed");
+
         }
 
         @Override
@@ -209,13 +241,13 @@ public class XXCamera {
         }
     };
 
-    SurfaceHolder.Callback surfaceHolderCallback = new SurfaceHolder.Callback() {
+    private SurfaceHolder.Callback surfaceHolderCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
             Log.d(TAG, "surfaceCreated");
             surface = holder.getSurface();
             if (mCameraDevice != null) {
-                startPreivew();
+                createCaptureSession();
             }
         }
 
@@ -226,11 +258,12 @@ public class XXCamera {
 
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
-
+            Log.d(TAG, "surfaceDestroyed");
+            close();
         }
     };
 
-    CameraCaptureSession.StateCallback createSessionCallback_ = new CameraCaptureSession.StateCallback() {
+    private CameraCaptureSession.StateCallback captureSessionCallback = new CameraCaptureSession.StateCallback() {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
             Log.d(TAG, "onConfigured");
@@ -238,10 +271,6 @@ public class XXCamera {
             try {
                 previewReqBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 previewReqBuilder.addTarget(hodler.getSurface());
-                if (EANBLE_ENCODER) {
-                    previewReqBuilder.addTarget(encoder.getSurface());
-//                    encoder.start();
-                }
 //                previewReqBuilder.addTarget(previewReader.getSurface());
 
                 mPreviewRequest = previewReqBuilder.build();
@@ -255,19 +284,6 @@ public class XXCamera {
         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
 
         }
-    };
-
-    CameraCaptureSession.CaptureCallback cam_cap_cb = new CameraCaptureSession.CaptureCallback() {
-        @Override
-        public void onCaptureStarted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, long timestamp, long frameNumber) {
-            super.onCaptureStarted(session, request, timestamp, frameNumber);
-        }
-
-        @Override
-        public void onCaptureProgressed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
-            super.onCaptureProgressed(session, request, partialResult);
-        }
-
     };
 
     private ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
@@ -307,9 +323,9 @@ public class XXCamera {
         try {
             // This is how to tell the camera to lock focus.
             previewReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
-            // Tell #mCaptureCallback to wait for the lock.
+            // Tell #previewCaptureCallback to wait for the lock.
             mState = STATE_WAITING_LOCK;
-            mCaptureSession.capture(previewReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
+            mCaptureSession.capture(previewReqBuilder.build(), previewCaptureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -319,18 +335,17 @@ public class XXCamera {
         try {
             previewReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
 //            setAutoFlash(previewReqBuilder);
-            mCaptureSession.capture(previewReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
+            mCaptureSession.capture(previewReqBuilder.build(), previewCaptureCallback, mBackgroundHandler);
             // After this, the camera will go back to the normal state of preview.
             mState = STATE_PREVIEW;
-            mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback, mBackgroundHandler);
+            mCaptureSession.setRepeatingRequest(mPreviewRequest, previewCaptureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
 
-    private CameraCaptureSession.CaptureCallback mCaptureCallback
-            = new CameraCaptureSession.CaptureCallback() {
+    private CameraCaptureSession.CaptureCallback previewCaptureCallback = new CameraCaptureSession.CaptureCallback() {
 
         private void process(CaptureResult result) {
             switch (mState) {
@@ -410,14 +425,13 @@ public class XXCamera {
 //            int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
             if (mCameraId == "0") {
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
-            }
-            else {
+            } else {
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
             }
 
 //            mCaptureSession.stopRepeating();
 
-            mCaptureSession.capture(captureBuilder.build(), stillCaptureCallback_, null);
+            mCaptureSession.capture(captureBuilder.build(), stillCaptureCallback_, mBackgroundHandler);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -440,9 +454,9 @@ public class XXCamera {
             // This is how to tell the camera to trigger.
             previewReqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                     CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
-            // Tell #mCaptureCallback to wait for the precapture sequence to be set.
+            // Tell #previewCaptureCallback to wait for the precapture sequence to be set.
             mState = STATE_WAITING_PRECAPTURE;
-            mCaptureSession.capture(previewReqBuilder.build(), mCaptureCallback, mBackgroundHandler);
+            mCaptureSession.capture(previewReqBuilder.build(), previewCaptureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }

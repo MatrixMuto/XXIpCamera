@@ -83,14 +83,6 @@ int xxio::Connect(std::string &address, event_handler_pt callback, void *data) {
     return 0;
 }
 
-int xxio::Write(uint8_t *string) {
-    return 0;
-}
-
-int xxio::Read() {
-    return 0;
-}
-
 void *xxio::loop_enter(void *data) {
     xxio *io = (xxio *) data;
     int err;
@@ -107,7 +99,7 @@ void *xxio::loop_enter(void *data) {
     return 0;
 }
 
-void xxio::start() {
+void xxio::Start() {
     int err = pthread_create(&thread_, NULL, loop_enter, this);
 }
 
@@ -195,10 +187,6 @@ int xxio::Select(long timer) {
     return err;
 }
 
-void xxio::AddSockFd(int fd) {
-
-}
-
 int xxio::process() {
 
     while (!queue_.empty()) {
@@ -233,8 +221,8 @@ void xxio::addEvent(event *ev) {
     nevents_++;
 }
 
-void xxio::deleteEvnet(event *ev) {
-    LOGI("deleteEvnet");
+void xxio::DeleteEvnet(event *ev) {
+    LOGI("DeleteEvnet");
     event *e;
 
     ev->active = 0;
@@ -256,7 +244,7 @@ void xxio::deleteEvnet(event *ev) {
     }
 }
 
-int xxio::Send(event *wev, uint8_t *buf, size_t size) {
+ssize_t xxio::Send(event *wev, uint8_t *buf, size_t size) {
     ssize_t n;
     int err;
 
@@ -342,7 +330,7 @@ void xxio::HandleWriteEvnet(int write) {
         }
 
         if (write_->active && write_->ready) {
-            deleteEvnet(write_);
+            DeleteEvnet(write_);
         }
     }
 }
@@ -369,7 +357,7 @@ void xxio::HandleReadEvnet(int i) {
     }
 
     if (read_->active && read_->ready) {
-        deleteEvnet(read_);
+        DeleteEvnet(read_);
     }
 }
 

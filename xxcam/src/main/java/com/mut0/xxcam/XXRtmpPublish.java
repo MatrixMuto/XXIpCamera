@@ -14,29 +14,32 @@ public class XXRtmpPublish {
         System.loadLibrary("native-lib");
     }
 
-    public XXRtmpPublish(){
+    public XXRtmpPublish() {
 
     }
 
 
-    void addTarget(String url){
+    void addTarget(String url) {
         native_addTarget(url);
     }
 
 
-    public void connect(){
+    public void connect() {
         native_connect();
     }
 
-    void disconnect(){
+    void disconnect() {
         native_disconnect();
     }
 
-    public void eatVideo(ByteBuffer byteBuffer, int position, int remaining, MediaCodec.BufferInfo info) {
-        native_eatVideo(byteBuffer, position, remaining, info.offset, info.flags, info.presentationTimeUs);
+    public void eatVideo(ByteBuffer byteBuffer, MediaCodec.BufferInfo info) {
+        native_eatVideo(byteBuffer, byteBuffer.position(), byteBuffer.remaining(), info.offset, info.flags, info.presentationTimeUs);
     }
+
     private native void native_addTarget(String url);
+
     private native void native_connect();
+
     private native void native_disconnect();
 
     private native void native_eatVideo(ByteBuffer byteBuffer, int position, int remaining, int offset, int flags, long presentationTimeUs);

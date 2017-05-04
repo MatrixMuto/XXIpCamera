@@ -41,7 +41,7 @@ int XXRtmp::CreateSession() {
     SendChallenge();
 
 
-    io->start();
+    io->Start();
 
     return 0;
 }
@@ -86,7 +86,7 @@ void XXRtmp::FiniliazeSession() {
     LOGE("Oh My God\n\t*\n\t*\n\t*\n");
     can_publish_ = false;
     if (io->read_->active) {
-        io->deleteEvnet(io->read_);
+        io->DeleteEvnet(io->read_);
     }
 }
 
@@ -294,7 +294,7 @@ void XXRtmp::rtmp_send(event *wev) {
     }
 
     if (wev->active) {
-        io->deleteEvnet(wev);
+        io->DeleteEvnet(wev);
     }
 
     handle_rtmp_other_event();

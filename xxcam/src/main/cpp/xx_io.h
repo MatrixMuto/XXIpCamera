@@ -45,41 +45,35 @@ public:
 
     static void* loop_enter(void*);
 
-    int Select(long timer);
+    void Start();
 
-    void start();
+    void Close();
 
-    int Write(uint8_t *string);
+    ssize_t Recv(event *rev, uint8_t *buf, size_t size);
 
-    int Send(event *ev, uint8_t *string, size_t i);
-
-    void Wirte(event_handler_pt callback, void *data);
-
-    void HandleWriteEvnet(int i);
+    ssize_t Send(event *wev, uint8_t *buf, size_t size);
 
     void SetReadHandler(event_handler_pt fun, void *pRtmp);
 
     void SetWriteHandler(event_handler_pt fun, void *pRtmp);
 
-    void deleteEvnet(event *ev);
-
-    ssize_t Recv(event *rev, uint8_t *buf, size_t size);
-
-    void Close();
+    void HandleWriteEvnet(int i);
 
     void HandleReadEvnet(int i);
 
-private:
-    void AddSockFd(int fd);
+    void DeleteEvnet(event *ev);
 
+    int Select(long timer);
+
+private:
     int process();
 
     void addEvent(event *pEvent);
-    int Read();
 
 public:
     event *write_;
     event *read_;
+
 private:
     bool quit_;
     pthread_t thread_;
@@ -95,11 +89,6 @@ private:
     event* events_[128];
     int nevents_;
     std::deque<event*> queue_;
-
-
 };
 
-class Connection {
-
-};
 #endif //XXIPCAMERA_XXIO_H
