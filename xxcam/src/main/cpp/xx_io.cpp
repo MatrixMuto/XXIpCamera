@@ -254,7 +254,7 @@ ssize_t xxio::Send(event *wev, uint8_t *buf, size_t size) {
         if (n > 0) {
 
             if (n < (ssize_t) size) {
-
+                wev->ready = 0;
             }
 
             return n;
@@ -263,19 +263,23 @@ ssize_t xxio::Send(event *wev, uint8_t *buf, size_t size) {
         err = errno;
 
         if (n == 0) {
-
-            return 0;
+            LOGE("send() returned zero");
+            wev->ready = 0;
+            return n;
         }
 
         if (err == EAGAIN || err == EINTR) {
-
+            wev->ready = 0;
+            LOGE("send() not ready");
 
             if (err == EAGAIN) {
-                return -EAGAIN;
+                return XX_AGAIN;
             }
 
         } else {
-            return -1;
+            wev->error = 1;
+            LOGE("send() failed");
+            return XX_ERROR;
         }
     }
 }
@@ -304,7 +308,7 @@ ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
 
         err = errno;
         if (err == EAGAIN || err == EINTR) {
-
+            LOGE("recv() not ready");
             n = XX_AGAIN;
         } else {
             n = XX_ERROR;
@@ -324,7 +328,7 @@ ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
 }
 
 void xxio::HandleWriteEvnet(int write) {
-    if (write) {
+//    if (write) {
         if (!write_->ready && !write_->active) {
             addEvent(write_);
         }
@@ -332,7 +336,7 @@ void xxio::HandleWriteEvnet(int write) {
         if (write_->active && write_->ready) {
             DeleteEvnet(write_);
         }
-    }
+//    }
 }
 
 void xxio::SetWriteHandler(event_handler_pt fun, void *pRtmp) {

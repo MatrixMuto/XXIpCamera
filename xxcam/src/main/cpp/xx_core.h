@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <semaphore.h>
 
 #include "xx_log.h"
 #include "xx_pool.h"

@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.util.Log;
 import android.util.Size;
+import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -27,6 +28,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mut0.xxcam.XXCamera;
@@ -139,6 +141,13 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
         editText = (EditText) findViewById(R.id.editText);
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+
+                return false;
+            }
+        });
         Button btnPublish = (Button) findViewById(R.id.btnPublish);
         btnPublish.setOnClickListener(
                 new View.OnClickListener() {

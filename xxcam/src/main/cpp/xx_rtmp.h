@@ -113,6 +113,7 @@ private:
     int state_;
     int epoch;
     std::list<xxbuf *> out;
+    sem_t sem_out;
     xx_stream *in_streams;
     int in_csid;
 

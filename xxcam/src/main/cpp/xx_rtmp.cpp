@@ -27,6 +27,7 @@ XXRtmp::XXRtmp() {
     in_streams = new xx_stream[128];
     can_publish_ = false;
     out_chunk_size_ = 4096;
+    sem_init(&sem_out, 0, 1);
 }
 
 XXRtmp::~XXRtmp() {
@@ -65,7 +66,7 @@ void XXRtmp::video(uint8_t *data, int n, int flag, long long int ts) {
         buf = new xxbuf(20 + out_chunk_size_);
         buf->pos += 20;
         buf->last += 20;
-        u_char type = flag == 8 ? 2 : 1;
+        u_char type = flag & 0x1 ? 1 : 2;
         type = (type << 4) | 7;
         u_char avc_packet_type = flag == 2 ? 0 : 1;
 
@@ -105,6 +106,9 @@ void XXRtmp::video(uint8_t *data, int n, int flag, long long int ts) {
 void XXRtmp::FiniliazeSession() {
     LOGE("Oh My God\n\t*\n\t*\n\t*\n");
     can_publish_ = false;
+    if (io->read_->active) {
+        io->DeleteEvnet(io->read_);
+    }
     if (io->read_->active) {
         io->DeleteEvnet(io->read_);
     }
@@ -218,7 +222,7 @@ void XXRtmp::Recv(event *rev) {
 
         /* if parsing pos is in zero, need parse header, else just recv chunk data.*/
         if (b->pos == b->start) {
-            u_char *p = b->pos;
+            p = b->pos;
             if (stream->ParseChunkStreamId(p, b->last, &fmt, &csid) == XX_AGAIN) {
                 continue;
             }
@@ -302,15 +306,22 @@ void XXRtmp::rtmp_send(event *wev) {
 
         if (n == XX_AGAIN || n == 0) {
             LOGE("rtmp_send again");
+            io->HandleWriteEvnet(0);
             return;
         }
 
         if (n < 0) {
             LOGE("rtmp_send err");
+            FiniliazeSession();
             return;
         }
 
-        out.pop_front();
+        b->pos += n;
+        if (b->pos == b->last) {
+            sem_wait(&sem_out);
+            out.pop_front();
+            sem_post(&sem_out);
+        }
     }
 
     if (wev->active) {
@@ -372,7 +383,9 @@ void XXRtmp::SendAckWindowSize(int ack_size) {
 }
 
 void XXRtmp::send_message(std::list<xxbuf *> &out2) {
+    sem_wait(&sem_out);
     out.merge(out2);
+    sem_post(&sem_out);
     if (!io->write_->active) {
         rtmp_send(io->write_);
     }

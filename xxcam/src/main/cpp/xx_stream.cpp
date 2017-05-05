@@ -5,7 +5,7 @@
 #include "xx_stream.h"
 
 xx_stream::xx_stream() {
-
+    len_ = 0;
 }
 
 int32_t xx_stream::ParseChunkStreamId(u_char *&p, u_char *last, uint8_t *fmt2, uint32_t *csid2) {

@@ -464,8 +464,7 @@ XXAmf *XXAmf::push_back(const XXAmfElt &elt) {
 
 int XXAmf::Write(std::list<xxbuf *> *out) {
     this->out = out;
-    write_internal(elements);
-    return XX_OK;
+    return write_internal(elements);
 }
 
 int XXAmf::write_internal(std::list<XXAmfElt> &elements) {
