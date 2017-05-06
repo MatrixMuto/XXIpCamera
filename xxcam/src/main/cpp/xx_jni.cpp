@@ -10,7 +10,6 @@
 static XXRtmp *rtmp = new XXRtmp();
 
 
-
 extern "C" {
 
 JNIEXPORT jint JNICALL
@@ -42,12 +41,25 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1eatVideo(JNIEnv *env, jobject instance
                                                    jlong presentationTimeUs) {
 
     uint8_t *data = (uint8_t *) env->GetDirectBufferAddress(byteBuffer);
-    LOGI("data %p, pos %ld, len %ld, offset %d, flags %x, pts %ld", data, pos, remaining, offset,
+    LOGI("V: data %p, pos %ld, len %ld, offset %d, flags %x, pts %ld", data, pos, remaining, offset,
          flags,
          presentationTimeUs);
     rtmp->video(data + pos, remaining, flags, presentationTimeUs);
 }
 
+JNIEXPORT void JNICALL
+Java_com_mut0_xxcam_XXRtmpPublish_native_1eatAudio(JNIEnv *env, jobject instance,
+                                                   jobject byteBuffer, jint position,
+                                                   jint remaining, jint offset, jint flags,
+                                                   jlong presentationTimeUs) {
+    uint8_t *data = (uint8_t *) env->GetDirectBufferAddress(byteBuffer);
+    LOGI("A: data %p, pos %ld, len %ld, offset %d, flags %x, pts %ld", data, position, remaining,
+         offset,
+         flags,
+         presentationTimeUs);
+    rtmp->audio(data + position, remaining, flags, presentationTimeUs);
+
+}
 
 JNIEXPORT void JNICALL
 Java_com_mut0_xxcam_XXRtmpPublish_native_1connect(JNIEnv *env, jobject instance, jstring url_) {

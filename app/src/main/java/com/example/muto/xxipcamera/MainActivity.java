@@ -31,6 +31,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mut0.xxcam.XXAEncoder;
 import com.mut0.xxcam.XXCamera;
 import com.mut0.xxcam.XXRtmpPublish;
 
@@ -160,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
                                 rtmpState = 1;
                                 break;
                             case 1:
+                                XXAEncoder ae = new XXAEncoder(publish);
                                 cam0.startEncoder();
                                 cam0.setRtmp(publish);
                                 rtmpState = 2;

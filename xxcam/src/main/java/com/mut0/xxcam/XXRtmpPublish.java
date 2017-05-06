@@ -18,12 +18,6 @@ public class XXRtmpPublish {
 
     }
 
-
-    void addTarget(String url) {
-        native_addTarget(url);
-    }
-
-
     public void connect(String url) {
         native_connect(url);
     }
@@ -36,7 +30,6 @@ public class XXRtmpPublish {
         native_eatVideo(byteBuffer, byteBuffer.position(), byteBuffer.remaining(), info.offset, info.flags, info.presentationTimeUs);
     }
 
-    private native void native_addTarget(String url);
 
     private native void native_connect(String url);
 
@@ -44,5 +37,9 @@ public class XXRtmpPublish {
 
     private native void native_eatVideo(ByteBuffer byteBuffer, int position, int remaining, int offset, int flags, long presentationTimeUs);
 
+    public void eatAudio(ByteBuffer byteBuffer, MediaCodec.BufferInfo info) {
+        native_eatAudio(byteBuffer, byteBuffer.position(), byteBuffer.remaining(), info.offset, info.flags, info.presentationTimeUs);
+    }
 
+    private native void native_eatAudio(ByteBuffer byteBuffer, int position, int remaining, int offset, int flags, long presentationTimeUs);
 }

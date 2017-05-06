@@ -9,17 +9,6 @@ import java.nio.ByteBuffer;
 public class XXCommander {
 
     public XXCommander() {
-        XXMicroPhone mp = new XXMicroPhone();
-
-        XXAEncoder ae = new XXAEncoder();
-
-//        XXCamera camera = new XXCamera();
-        XXVEncoder ve = new XXVEncoder();
-
-
-
-        XXRtmpPublish rtmp = new XXRtmpPublish();
-
     }
 
 }

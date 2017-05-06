@@ -52,6 +52,8 @@ public:
 
     static ngx_chain_t *alloc_amf_buf(void *arg);
 
+    void audio(uint8_t *string, int i, int i1, long long int i2);
+
 private:
     void SendChallenge();
 

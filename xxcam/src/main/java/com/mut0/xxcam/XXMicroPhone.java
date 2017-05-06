@@ -16,15 +16,15 @@ public class XXMicroPhone {
     AudioRecord ar;
 
     public XXMicroPhone(){
-        int minsize = AudioRecord.getMinBufferSize(48000,
+        int minsize = AudioRecord.getMinBufferSize(44100,
                 AudioFormat.CHANNEL_OUT_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT);
 
         ar = new AudioRecord(
                 MediaRecorder.AudioSource.DEFAULT,
-                48000,
+                44100,
                 AudioFormat.CHANNEL_OUT_STEREO,
-                AudioFormat.ENCODING_PCM_16BIT,minsize*2);
+                AudioFormat.ENCODING_PCM_16BIT, minsize * 2);
 
         ar.startRecording();
     }
@@ -34,14 +34,6 @@ public class XXMicroPhone {
 
         Log.d("xxx", "readed" + readed);
         return readed;
-    }
-
-
-    private static class XXXThread extends Thread {
-        @Override
-        public void run() {
-            super.run();
-        }
     }
 
 }

@@ -17,16 +17,14 @@ import java.nio.ByteBuffer;
 public class XXAEncoder {
 
     private static final String TAG = "XXAEncoder";
+    private XXRtmpPublish rtmp;
     MediaCodec codec;
     XXMicroPhone pp;
 
-    public XXAEncoder() {
-        MediaFormat format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 48000, 2);
-        format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, 48000);
-//        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-
-//        String encoder_type = list.findEncoderForFormat(format);
+    public XXAEncoder(XXRtmpPublish rtmp) {
+        MediaFormat format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 44100, 2);
+        format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectHE);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, 10000);
 
         try {
             codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC);
@@ -41,13 +39,13 @@ public class XXAEncoder {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        this.rtmp = rtmp;
     }
 
     MediaCodec.Callback mediacodecCallback = new MediaCodec.Callback() {
         @Override
         public void onInputBufferAvailable(@NonNull MediaCodec codec, int index) {
-            Log.d("xxxx", "onInputBufferAvailable " + index);
+            Log.d(TAG, "onInputBufferAvailable " + index);
 
             ByteBuffer buffer = codec.getInputBuffer(index);
 
@@ -59,20 +57,20 @@ public class XXAEncoder {
 
         @Override
         public void onOutputBufferAvailable(@NonNull MediaCodec codec, int index, @NonNull MediaCodec.BufferInfo info) {
-            Log.d("xxxxA", "onOutputBufferAvailable " + index + " " + info.presentationTimeUs + " " + info.flags);
+            Log.d(TAG, "onOutputBufferAvailable " + index + " " + info.presentationTimeUs + " " + info.flags);
             ByteBuffer buffer = codec.getOutputBuffer(index);
-
+            rtmp.eatAudio(buffer, info);
             codec.releaseOutputBuffer(index, false);
         }
 
         @Override
         public void onError(@NonNull MediaCodec codec, @NonNull MediaCodec.CodecException e) {
-            Log.d("xxxx", "onError ");
+            Log.d(TAG, "onError ");
         }
 
         @Override
         public void onOutputFormatChanged(@NonNull MediaCodec codec, @NonNull MediaFormat format) {
-            Log.d("xxxx", "onOutputFormatChanged " + format.toString());
+            Log.d(TAG, "onOutputFormatChanged " + format.toString());
         }
     };
 }

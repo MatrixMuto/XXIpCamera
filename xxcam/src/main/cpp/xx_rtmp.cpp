@@ -54,6 +54,51 @@ int XXRtmp::CreateSession(const char *url) {
     return XX_OK;
 }
 
+void XXRtmp::audio(uint8_t *data, int n, int flag, long long int ts) {
+    if (can_publish_) {
+        int copy;
+        std::list<xxbuf *> out;
+        xxbuf *buf;
+        int time = 0;
+        uint8_t *pos, *end;
+
+        buf = new xxbuf(20 + out_chunk_size_);
+        buf->pos += 20;
+        buf->last += 20;
+
+        u_char type = 10;
+        type = (type << 4) | (3 << 2) | (1 << 1) | 1;
+        u_char avc_packet_type = flag == 2 ? 0 : 1;
+
+        buf->last = xx_cpymem(buf->last, &type, 1);
+        buf->last = xx_cpymem(buf->last, &avc_packet_type, 1);
+        pos = data;
+        end = data + n;
+        for (;;) {
+            copy = ngx_min(end - pos, buf->end - buf->last);
+            buf->last = xx_cpymem(buf->last, pos, copy);
+            pos += copy;
+            out.push_back(buf);
+            if (pos < end) {
+                buf = new xxbuf(20 + out_chunk_size_);
+                buf->pos += 20;
+                buf->last = buf->pos;
+            } else {
+                break;
+            }
+        }
+
+        rtmp_header h;
+        h.msid = NGX_RTMP_MSID;
+//        h.timestamp = ts - start_;
+        h.csid = NGX_RTMP_CSID_AUDIO;
+        h.type = NGX_RTMP_MSG_AUDIO;
+
+        prepare_message(&h, NULL, out);
+        send_message(out);
+    }
+}
+
 void XXRtmp::video(uint8_t *data, int n, int flag, long long int ts) {
 
     if (can_publish_) {
@@ -729,3 +774,5 @@ int XXRtmp::parse(const char *url) {
 
     return XX_OK;
 }
+
+
