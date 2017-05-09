@@ -34,7 +34,9 @@ public class XXCamera {
 
     private static final String TAG = "XXCamera";
 
-    private static final boolean EANBLE_ENCODER = true;
+    private static final boolean EANBLE_ENCODER = false;
+    private static final boolean EANBLE_PREVIEW_READER = true;
+
 
     private SurfaceHolder hodler;
     private CameraManager manager;
@@ -47,7 +49,7 @@ public class XXCamera {
     private long index;
     private ImageReader previewReader;
     private XXVEncoder encoder;
-    private ImageReader.OnImageAvailableListener listener;
+    private BokehSnapshotListener listener;
     private CameraCaptureSession mCaptureSession;
     private int mState = STATE_PREVIEW;
     private static final int STATE_PREVIEW = 0;
@@ -56,7 +58,8 @@ public class XXCamera {
     private static final int STATE_WAITING_NON_PRECAPTURE = 3;
     private static final int STATE_PICTURE_TAKEN = 4;
     private CaptureRequest mPreviewRequest;
-    private ImageReader mJpegImageReader;
+    private ImageReader snapshotJpegReader;
+    private ImageReader snapshoYuvReader;
     private Size mJpegSize;
     private XXRtmpPublish rtmp;
 
@@ -65,7 +68,7 @@ public class XXCamera {
         holder.addCallback(surfaceHolderCallback);
     }
 
-    public XXCamera(CameraManager manager, SurfaceHolder holder, ImageReader.OnImageAvailableListener listener) {
+    public XXCamera(CameraManager manager, SurfaceHolder holder, BokehSnapshotListener listener) {
         this.manager = manager;
         holder.addCallback(surfaceHolderCallback);
         this.hodler = holder;
@@ -93,30 +96,45 @@ public class XXCamera {
         mJpegSize = size;
     }
 
-    public void open(String cameraId) {
+    public void open(final String cameraId) {
         startBackgroundThread();
-        mCameraId = cameraId;
-        try {
-            String[] camidlist = manager.getCameraIdList();
-            String back_id = null;
-            for (String id : camidlist) {
-                Log.d(TAG, "camera mCameraId =[" + id + "]");
-                CameraCharacteristics cc = manager.getCameraCharacteristics(id);
 
-                StreamConfigurationMap map = cc.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                Size largestJpeg = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
+        mBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mCameraId = cameraId;
+                try {
+                    String[] camidlist = manager.getCameraIdList();
+                    String back_id = null;
+                    for (String id : camidlist) {
+                        Log.d(TAG, "camera mCameraId =[" + id + "]");
+                        CameraCharacteristics cc = manager.getCameraCharacteristics(id);
+
+                        StreamConfigurationMap map = cc.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+//                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        int[] inputFormats = map.getInputFormats();
+                        for (int format : inputFormats) {
+
+                            Log.d(TAG, "camerad[" + cameraId + "] support foramt " + format);
+                        }
+//                }
+                        Size largestJpeg = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
 
 
-                int mSensorOrientation = cc.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                        int mSensorOrientation = cc.get(CameraCharacteristics.SENSOR_ORIENTATION);
 
-                Log.d(TAG, "max jpeg " + largestJpeg.getWidth() + largestJpeg.getHeight() + " " + mSensorOrientation);
+                        Log.d(TAG, "max jpeg " + largestJpeg.getWidth() + largestJpeg.getHeight() + " " + mSensorOrientation);
+
+                    }
+                    manager.openCamera(cameraId, deviceCallback, mBackgroundHandler);
+
+                } catch (CameraAccessException | SecurityException | NullPointerException e) {
+                    e.printStackTrace();
+                }
 
             }
-            manager.openCamera(cameraId, deviceCallback, mBackgroundHandler);
+        });
 
-        } catch (CameraAccessException | SecurityException | NullPointerException e) {
-            e.printStackTrace();
-        }
 
     }
 
@@ -148,9 +166,9 @@ public class XXCamera {
             mCameraDevice.close();
             mCameraDevice = null;
         }
-        if (null != mJpegImageReader) {
-            mJpegImageReader.close();
-            mJpegImageReader = null;
+        if (null != snapshotJpegReader) {
+            snapshotJpegReader.close();
+            snapshotJpegReader = null;
         }
 
         surface = null;
@@ -165,10 +183,13 @@ public class XXCamera {
 
             outputs.add(hodler.getSurface());
 
-//            //preview imagereader
-//            previewReader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 10);
-//            previewReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
-//            outputs.add(previewReader.getSurface());
+            //preview imagereader
+            if (EANBLE_PREVIEW_READER) {
+                previewReader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 10);
+                previewReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
+                outputs.add(previewReader.getSurface());
+            }
+
 
             if (EANBLE_ENCODER) {
                 encoder = new XXVEncoder();
@@ -176,9 +197,14 @@ public class XXCamera {
             }
 
             //StillCaputre ImageReader
-            mJpegImageReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.JPEG, /*maxImages*/1);
-            mJpegImageReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
-            outputs.add(mJpegImageReader.getSurface());
+            snapshotJpegReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.JPEG, /*maxImages*/1);
+            snapshotJpegReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
+            outputs.add(snapshotJpegReader.getSurface());
+
+//            snapshoYuvReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.RAW12, /*maxImages*/1);
+//            snapshoYuvReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
+//            outputs.add(snapshoYuvReader.getSurface());
+
 
             mCameraDevice.createCaptureSession(outputs, captureSessionCallback, mBackgroundHandler);
 
@@ -237,7 +263,7 @@ public class XXCamera {
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
 
-            Log.d(TAG, "onError");
+            Log.d(TAG, "onError ");
         }
     };
 
@@ -271,8 +297,9 @@ public class XXCamera {
             try {
                 previewReqBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 previewReqBuilder.addTarget(hodler.getSurface());
-//                previewReqBuilder.addTarget(previewReader.getSurface());
-
+                if (EANBLE_PREVIEW_READER) {
+                    previewReqBuilder.addTarget(previewReader.getSurface());
+                }
                 mPreviewRequest = previewReqBuilder.build();
                 mCaptureSession.setRepeatingRequest(mPreviewRequest, null, mBackgroundHandler);
             } catch (CameraAccessException e) {
@@ -285,6 +312,17 @@ public class XXCamera {
 
         }
     };
+
+    private ImageReader.OnImageAvailableListener mOnJpegImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+//            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            if (listener != null) {
+                listener.onImageAvailable(mCameraId, reader);
+            }
+        }
+    };
+
 
     private ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
@@ -299,20 +337,15 @@ public class XXCamera {
             image.close();
         }
     };
-
-
-    private ImageReader.OnImageAvailableListener mOnJpegImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+    private ImageReader.OnImageAvailableListener mOnYuvImageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
 //            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
             if (listener != null) {
-                listener.onImageAvailable(reader);
+                listener.onImageAvailable(mCameraId, reader);
             }
         }
-
-
     };
-
     public void takePicture() {
 
         captureStillPicture();
@@ -411,25 +444,22 @@ public class XXCamera {
 
     private void captureStillPicture() {
         try {
-            // This is the CaptureRequest.Builder that we use to take a picture.
             final CaptureRequest.Builder captureBuilder =
                     mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            captureBuilder.addTarget(mJpegImageReader.getSurface());
+            captureBuilder.addTarget(snapshotJpegReader.getSurface());
 
-            // Use the same AE and AF modes as the preview.
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-//            setAutoFlash(captureBuilder);
 
             // Orientation
 //            int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-            if (mCameraId == "0") {
+//            if (mCameraId == "0") {
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
-            } else {
+//            } else {
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
-            }
+//            }
 
-//            mCaptureSession.stopRepeating();
+            mCaptureSession.stopRepeating();
 
             mCaptureSession.capture(captureBuilder.build(), stillCaptureCallback_, mBackgroundHandler);
 
@@ -443,8 +473,6 @@ public class XXCamera {
         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                        @NonNull CaptureRequest request,
                                        @NonNull TotalCaptureResult result) {
-//                    showToast("Saved: " + mFile);
-//                    Log.d(TAG, mFile.toString());
             unlockFocus();
         }
     };
