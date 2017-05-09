@@ -60,4 +60,42 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentStart="true" />
 
+    <Button
+        android:id="@+id/btnMain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button"
+        android:layout_above="@+id/surfaceView2"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:id="@+id/btnAux"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/surfaceView2"
+        android:layout_alignParentEnd="true"
+        android:text="Button" />
+
+    <EditText
+        android:id="@+id/editTextAux"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/btnAux"
+        android:layout_alignParentEnd="true"
+        android:layout_alignStart="@+id/btnAux"
+        android:ems="10"
+        android:inputType="number"
+        android:text="3" />
+
+    <EditText
+        android:id="@+id/editTextMain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/btnMain"
+        android:layout_alignParentEnd="true"
+        android:layout_alignStart="@+id/btnMain"
+        android:ems="10"
+        android:inputType="number"
+        android:text="0" />
+
 </RelativeLayout>

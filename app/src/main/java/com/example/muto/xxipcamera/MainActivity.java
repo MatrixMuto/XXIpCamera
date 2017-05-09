@@ -53,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
     private XXRtmpPublish publish;
     private String url;
     private EditText editText;
+    private EditText editTextMain;
+    private EditText editTextAux;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,8 +110,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void startCamera() {
 
-        cam0.open("0");
-        mCurrentCamera = 0;
+//        cam0.open("9");
+//        mCurrentCamera = 0;
 
         Button btnCapture = (Button) findViewById(R.id.btnCapture);
         btnCapture.setOnClickListener(
@@ -141,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+
         editText = (EditText) findViewById(R.id.editText);
         editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -174,7 +177,27 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+        editTextMain = (EditText) findViewById(R.id.editTextMain);
+        Button btnMain = (Button) findViewById(R.id.btnMain);
+        btnMain.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        cam0.open(editTextMain.getText().toString());
+                    }
+                }
+        );
 
+        editTextAux = (EditText) findViewById(R.id.editTextAux);
+        Button btnAux = (Button) findViewById(R.id.btnAux);
+        btnAux.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        cam1.open(editTextAux.getText().toString());
+                    }
+                }
+        );
     }
 
     @Override
