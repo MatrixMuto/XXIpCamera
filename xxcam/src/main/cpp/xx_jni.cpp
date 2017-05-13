@@ -3,12 +3,11 @@
 //
 #include <jni.h>
 #include <android/log.h>
-
 #include <sys/types.h>
+
 #include "xx_rtmp.h"
 
 static XXRtmp *rtmp = new XXRtmp();
-
 
 extern "C" {
 
@@ -42,8 +41,7 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1eatVideo(JNIEnv *env, jobject instance
 
     uint8_t *data = (uint8_t *) env->GetDirectBufferAddress(byteBuffer);
     LOGI("V: data %p, pos %ld, len %ld, offset %d, flags %x, pts %ld", data, pos, remaining, offset,
-         flags,
-         presentationTimeUs);
+         flags, presentationTimeUs);
     rtmp->video(data + pos, remaining, flags, presentationTimeUs);
 }
 
@@ -54,9 +52,7 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1eatAudio(JNIEnv *env, jobject instance
                                                    jlong presentationTimeUs) {
     uint8_t *data = (uint8_t *) env->GetDirectBufferAddress(byteBuffer);
     LOGI("A: data %p, pos %ld, len %ld, offset %d, flags %x, pts %ld", data, position, remaining,
-         offset,
-         flags,
-         presentationTimeUs);
+         offset, flags, presentationTimeUs);
     rtmp->audio(data + position, remaining, flags, presentationTimeUs);
 
 }
@@ -66,6 +62,8 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1connect(JNIEnv *env, jobject instance,
     const char *url = env->GetStringUTFChars(url_, 0);
 
     rtmp->CreateSession(url);
+    XXSession* session = XXRtmp::CreateSession();
+    session->CreateConnection(url, 0);
 
     env->ReleaseStringUTFChars(url_, url);
 }
