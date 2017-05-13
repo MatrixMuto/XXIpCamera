@@ -21,7 +21,9 @@
         tools:layout_editor_absoluteX="12dp"
         tools:layout_editor_absoluteY="190dp"
         android:layout_below="@+id/surfaceView"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_above="@+id/editText"
+        android:layout_alignEnd="@+id/surfaceView" />
 
     <Button
         android:id="@+id/btnCapture"
@@ -55,7 +57,7 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textPersonName"
-        android:text="rtmp://192.168.55.106/live/test"
+        android:text="rtmp://192.168.1.111/live/test"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentStart="true" />

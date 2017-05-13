@@ -5,7 +5,6 @@
 #ifndef XXIPCAMERA_RTMP_CPP_H
 #define XXIPCAMERA_RTMP_CPP_H
 
-#include "xx_core.h"
 #include "xx_io.h"
 #include "xx_amf.h"
 #include "xx_stream.h"
@@ -30,11 +29,13 @@
 #define NGX_RTMP_MSG_MAX                22
 
 
-class XXRtmp {
+class XXRtmpImpl {
 public:
-    XXRtmp();
+    XXRtmpImpl();
 
-    ~XXRtmp();
+    ~XXRtmpImpl();
+
+    static XXSession* CreateSession();
 
     int CreateSession(const char *string);
 
