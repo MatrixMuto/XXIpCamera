@@ -31,6 +31,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mut0.xxcam.BokehPreview;
+import com.mut0.xxcam.BokehSnapshot;
 import com.mut0.xxcam.XXAEncoder;
 import com.mut0.xxcam.XXCamera;
 import com.mut0.xxcam.XXRtmpPublish;
@@ -55,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText editText;
     private EditText editTextMain;
     private EditText editTextAux;
+    private BokehSnapshot bokehSnapShot;
+    private BokehPreview bokehPreview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,17 +70,20 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        bokehSnapShot = new BokehSnapshot(getApplicationContext());
+        bokehPreview = new BokehPreview(getApplicationContext());
+
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         {
             SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
             SurfaceHolder holder = surfaceView.getHolder();
-            cam0 = new XXCamera(manager, holder, mJpegListener);
+            cam0 = new XXCamera(manager, holder, bokehSnapShot);
             cam0.setJpegSize(new Size(4160, 3120));
         }
         {
             SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView2);
             SurfaceHolder holder = surfaceView.getHolder();
-            cam1 = new XXCamera(manager, holder, mJpegListener);
+            cam1 = new XXCamera(manager, holder, bokehSnapShot);
             cam1.setJpegSize(new Size(1600, 1200));
         }
 
@@ -110,19 +117,19 @@ public class MainActivity extends AppCompatActivity {
 
     private void startCamera() {
 
-//        cam0.open("9");
-//        mCurrentCamera = 0;
+        cam0.open("0");
+        cam1.open("2");
 
         Button btnCapture = (Button) findViewById(R.id.btnCapture);
         btnCapture.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (mCurrentCamera == 0) {
+//                        if (mCurrentCamera == 0) {
                             cam0.takePicture();
-                        } else {
+//                        } else {
                             cam1.takePicture();
-                        }
+//                        }
                     }
                 }
         );
@@ -143,7 +150,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
-
         editText = (EditText) findViewById(R.id.editText);
         editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override

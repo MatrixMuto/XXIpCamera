@@ -6,6 +6,8 @@
 #define XXRTMP_XX_STREAM_H
 
 
+#include "xx_core.h"
+
 /* Chunk Stream */
 class xx_stream {
 public:

@@ -26,9 +26,15 @@
 #include <arpa/inet.h>
 #include <semaphore.h>
 
+typedef  uint8_t u_char;
+
+#include "xx_api.h"
 #include "xx_log.h"
 #include "xx_pool.h"
 #include "xx_buf.h"
+#include "xx_session.h"
+#include "xx_connection.h"
+#include "xx_io.h"
 
 #define  XX_OK          0
 #define  XX_ERROR      -1
@@ -38,7 +44,8 @@
 #define  XX_DECLINED   -5
 #define  XX_ABORT      -6
 
-class rtmp_header {
+
+struct rtmp_header {
 public:
     uint8_t type;
     uint32_t timestamp;

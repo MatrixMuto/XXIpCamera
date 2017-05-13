@@ -20,20 +20,20 @@
 #define NGX_RTMP_HANDSHAKE_CLIENT_DONE              10
 
 
-void XXRtmp::HandshakeRecv(event *rev) {
+void XXRtmpImpl::HandshakeRecv(event *rev) {
     LOGI("HandshakeRecv");
-    XXRtmp *rtmp = (XXRtmp *) rev->data;
+    XXRtmpImpl *rtmp = (XXRtmpImpl *) rev->data;
     rtmp->handshake_recv(rev);
 }
 
-void XXRtmp::HandshakeSend(event *wev) {
+void XXRtmpImpl::HandshakeSend(event *wev) {
     LOGI("HandshakeSend");
-    XXRtmp *rtmp = (XXRtmp *) wev->data;
+    XXRtmpImpl *rtmp = (XXRtmpImpl *) wev->data;
     rtmp->handshake_send(wev);
 }
 
 
-void XXRtmp::SendChallenge() {
+void XXRtmpImpl::SendChallenge() {
     /* Set io the handler*/
     io->SetReadHandler(HandshakeRecv, this);
     io->SetWriteHandler(HandshakeSend, this);
@@ -57,7 +57,7 @@ void XXRtmp::SendChallenge() {
     io->HandleWriteEvnet(1);
 }
 
-void XXRtmp::handshake_send(event *wev) {
+void XXRtmpImpl::handshake_send(event *wev) {
 
     ssize_t n;
     xxbuf *b = hs_buf;
@@ -98,7 +98,7 @@ void XXRtmp::handshake_send(event *wev) {
     }
 }
 
-void XXRtmp::handshake_recv(event *rev) {
+void XXRtmpImpl::handshake_recv(event *rev) {
 
     ssize_t n;
     xxbuf *b = hs_buf;
@@ -144,13 +144,13 @@ void XXRtmp::handshake_recv(event *rev) {
     }
 }
 
-void XXRtmp::fill_random_buffer(xxbuf *b) {
+void XXRtmpImpl::fill_random_buffer(xxbuf *b) {
     for (; b->last != b->end; ++b->last) {
         *b->last = (u_char) rand();
     }
 }
 
-int XXRtmp::handshake_create_challenge(const u_char version[4]) {
+int XXRtmpImpl::handshake_create_challenge(const u_char version[4]) {
     xxbuf *b;
     b = hs_buf;
     b->last = b->pos = b->start;
@@ -167,7 +167,7 @@ int XXRtmp::handshake_create_challenge(const u_char version[4]) {
 }
 
 
-int XXRtmp::create_response() {
+int XXRtmpImpl::create_response() {
     xxbuf *b;
     u_char *p;
 

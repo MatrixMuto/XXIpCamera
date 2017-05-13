@@ -6,6 +6,9 @@
 #define PROJECT_XX_POOL_H
 
 class XXPool {
+public:
+    XXPool();
+    virtual ~XXPool();
 
 };
 
