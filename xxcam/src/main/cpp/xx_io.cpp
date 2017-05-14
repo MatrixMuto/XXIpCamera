@@ -5,7 +5,6 @@
 #include "xx_io.h"
 #include "xx_rtmp.h"
 
-
 #define NGX_TIMER_INFINITE (-1)
 
 xxio::xxio() {
@@ -16,7 +15,7 @@ xxio::~xxio() {
 
 }
 
-int xxio::Connect(std::string &ip, event_handler_pt callback, void *data) {
+int xxio::Connect(std::string ip, uint16_t port, event_handler_pt callback, void *data) {
     int err, rc;
     int flags;
     struct sockaddr_in addr;
@@ -47,7 +46,7 @@ int xxio::Connect(std::string &ip, event_handler_pt callback, void *data) {
 
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip.c_str());
-    addr.sin_port = htons(1935);
+    addr.sin_port = htons(port);
 
     rc = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));
     if (rc == -1) {
@@ -103,6 +102,10 @@ void xxio::Start() {
     int err = pthread_create(&thread_, NULL, loop_enter, this);
 }
 
+void xxio::Close() {
+    quit_ = 1;
+}
+
 int xxio::Select(long timer) {
     int err = 0;
     int ready, i;
@@ -120,9 +123,6 @@ int xxio::Select(long timer) {
                 max_fd_ = sockfd_;
             }
         }
-
-//        LOGI("max fd is %d", max_fd_);
-
     }
 
     if (timer == NGX_TIMER_INFINITE) {
@@ -282,6 +282,7 @@ ssize_t xxio::Send(event *wev, uint8_t *buf, size_t size) {
             return XX_ERROR;
         }
     }
+    return n;
 }
 
 ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
@@ -328,15 +329,13 @@ ssize_t xxio::Recv(event *rev, uint8_t *buf, size_t size) {
 }
 
 void xxio::HandleWriteEvnet(int write) {
-//    if (write) {
-        if (!write_->ready && !write_->active) {
-            addEvent(write_);
-        }
+    if (!write_->ready && !write_->active) {
+        addEvent(write_);
+    }
 
-        if (write_->active && write_->ready) {
-            DeleteEvnet(write_);
-        }
-//    }
+    if (write_->active && write_->ready) {
+        DeleteEvnet(write_);
+    }
 }
 
 void xxio::SetWriteHandler(event_handler_pt fun, void *pRtmp) {
@@ -349,10 +348,6 @@ void xxio::SetReadHandler(event_handler_pt fun, void *pRtmp) {
     read_->handler = fun;
 }
 
-
-void xxio::Close() {
-    quit_ = 1;
-}
 
 void xxio::HandleReadEvnet(int i) {
     LOGI("HandleReadEvnet ready %d active %d", read_->ready, read_->active);
