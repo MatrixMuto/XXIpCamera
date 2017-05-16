@@ -1,7 +1,6 @@
 package com.example.muto.xxipcamera;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraManager;
@@ -17,7 +16,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Editable;
 import android.util.Log;
 import android.util.Size;
 import android.view.KeyEvent;
@@ -68,20 +66,21 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        setContentView(R.layout.activity_main);
+//        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_main_framelayout);
 
         bokehSnapShot = new BokehSnapshot(getApplicationContext());
         bokehPreview = new BokehPreview(getApplicationContext());
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView3);
             SurfaceHolder holder = surfaceView.getHolder();
             cam0 = new XXCamera(manager, holder, bokehSnapShot);
             cam0.setJpegSize(new Size(4160, 3120));
         }
         {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView2);
+            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView4);
             SurfaceHolder holder = surfaceView.getHolder();
             cam1 = new XXCamera(manager, holder, bokehSnapShot);
             cam1.setJpegSize(new Size(1600, 1200));
@@ -96,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+//        setupUI();
         startCamera();
     }
 
@@ -116,19 +116,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startCamera() {
-
         cam0.open("0");
         cam1.open("2");
+    }
 
+    private void setupUI() {
         Button btnCapture = (Button) findViewById(R.id.btnCapture);
         btnCapture.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
 //                        if (mCurrentCamera == 0) {
-                            cam0.takePicture();
+                        cam0.takePicture();
 //                        } else {
-                            cam1.takePicture();
+                        cam1.takePicture();
 //                        }
                     }
                 }
