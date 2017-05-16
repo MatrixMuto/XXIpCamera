@@ -3,3 +3,21 @@
 //
 
 #include "xx_session.h"
+#include "xx_connection.h"
+
+XXSessionImpl::XXSessionImpl() {
+
+}
+
+XXSessionImpl::~XXSessionImpl() {
+
+}
+
+XXConnection *XXSessionImpl::CreateConnection(const std::string &url, XXConnectionCallback *cb) {
+    XXConnection *c = new XXConnectionImpl(url, cb);
+    return c;
+}
+
+void XXSessionImpl::Finalize() {
+
+}

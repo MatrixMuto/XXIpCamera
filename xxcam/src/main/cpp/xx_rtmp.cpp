@@ -20,8 +20,16 @@
 #define NGX_RTMP_CSID_VIDEO             7
 #define NGX_RTMP_RELAY_MSID                     1
 
+
+
+/* static */
+XXSession* XXRtmp::CreateSession()
+{
+    return new XXSessionImpl();
+}
+
 /* Called in User thread */
-XXRtmp::XXRtmp() {
+XXRtmpImpl::XXRtmpImpl() {
     io = new xxio();
     in_chunk_size = 128;
     in_streams = new xx_stream[128];
@@ -30,11 +38,11 @@ XXRtmp::XXRtmp() {
     sem_init(&sem_out, 0, 1);
 }
 
-XXRtmp::~XXRtmp() {
+XXRtmpImpl::~XXRtmpImpl() {
     delete io;
 }
 
-int XXRtmp::CreateSession(const char *url) {
+int XXRtmpImpl::CreateSession(const char *url) {
     int err;
     in_csid = 0;
 
@@ -54,7 +62,7 @@ int XXRtmp::CreateSession(const char *url) {
     return XX_OK;
 }
 
-void XXRtmp::audio(uint8_t *data, int n, int flag, long long int ts) {
+void XXRtmpImpl::audio(uint8_t *data, int n, int flag, long long int ts) {
     if (can_publish_) {
         int copy;
         std::list<xxbuf *> out;
@@ -99,7 +107,7 @@ void XXRtmp::audio(uint8_t *data, int n, int flag, long long int ts) {
     }
 }
 
-void XXRtmp::video(uint8_t *data, int n, int flag, long long int ts) {
+void XXRtmpImpl::video(uint8_t *data, int n, int flag, long long int ts) {
 
     if (can_publish_) {
         int copy;
@@ -148,7 +156,7 @@ void XXRtmp::video(uint8_t *data, int n, int flag, long long int ts) {
 
 /* Callback from io thread. */
 
-void XXRtmp::FiniliazeSession() {
+void XXRtmpImpl::FiniliazeSession() {
     LOGE("Oh My God\n\t*\n\t*\n\t*\n");
     can_publish_ = false;
     if (io->read_->active) {
@@ -159,25 +167,25 @@ void XXRtmp::FiniliazeSession() {
     }
 }
 
-void XXRtmp::OnConnect(event *ev) {
+void XXRtmpImpl::OnConnect(event *ev) {
     LOGI("OnConnect r:%d w:%d", ev->read, ev->write);
-    XXRtmp *rtmp = (XXRtmp *) ev->data;
+    XXRtmpImpl *rtmp = (XXRtmpImpl *) ev->data;
 }
 
-void XXRtmp::RtmpSend(event *wev) {
+void XXRtmpImpl::RtmpSend(event *wev) {
     LOGI("RtmpSend");
-    XXRtmp *rtmp = (XXRtmp *) wev->data;
+    XXRtmpImpl *rtmp = (XXRtmpImpl *) wev->data;
     rtmp->rtmp_send(wev);
 }
 
-void XXRtmp::RtmpRecv(event *rev) {
+void XXRtmpImpl::RtmpRecv(event *rev) {
     LOGI("RtmpRecv");
-    XXRtmp *rtmp = (XXRtmp *) rev->data;
+    XXRtmpImpl *rtmp = (XXRtmpImpl *) rev->data;
     rtmp->Recv(rev);
 }
 
 
-void XXRtmp::handshake_done() {
+void XXRtmpImpl::handshake_done() {
     LOGI("handshake done");
 
     io->SetReadHandler(RtmpRecv, this);
@@ -191,7 +199,7 @@ void XXRtmp::handshake_done() {
     Recv(io->read_);
 }
 
-void XXRtmp::Recv(event *rev) {
+void XXRtmpImpl::Recv(event *rev) {
     LOGI("Recv called enter");
     ssize_t n;
     xxbuf *b = new xxbuf(5000);
@@ -341,7 +349,7 @@ void XXRtmp::Recv(event *rev) {
     }
 }
 
-void XXRtmp::rtmp_send(event *wev) {
+void XXRtmpImpl::rtmp_send(event *wev) {
     xxbuf *b;
     ssize_t n;
 
@@ -377,7 +385,7 @@ void XXRtmp::rtmp_send(event *wev) {
 
 }
 
-void XXRtmp::SendChunkSize(int chunksize) {
+void XXRtmpImpl::SendChunkSize(int chunksize) {
     std::list<xxbuf *> out;
     xxbuf *b;
     rtmp_header *h;
@@ -402,7 +410,7 @@ void XXRtmp::SendChunkSize(int chunksize) {
     send_message(out);
 }
 
-void XXRtmp::SendAckWindowSize(int ack_size) {
+void XXRtmpImpl::SendAckWindowSize(int ack_size) {
     std::list<xxbuf *> out;
     xxbuf *b;
     rtmp_header *h;
@@ -427,7 +435,7 @@ void XXRtmp::SendAckWindowSize(int ack_size) {
     send_message(out);
 }
 
-void XXRtmp::send_message(std::list<xxbuf *> &out2) {
+void XXRtmpImpl::send_message(std::list<xxbuf *> &out2) {
     sem_wait(&sem_out);
     out.merge(out2);
     sem_post(&sem_out);
@@ -436,7 +444,7 @@ void XXRtmp::send_message(std::list<xxbuf *> &out2) {
     }
 }
 
-void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, std::list<xxbuf *> &out) {
+void XXRtmpImpl::prepare_message(rtmp_header *h, rtmp_header *lh, std::list<xxbuf *> &out) {
 
     u_char *p, *pp;//= buf->pos;
     uint8_t fmt;
@@ -549,12 +557,12 @@ void XXRtmp::prepare_message(rtmp_header *h, rtmp_header *lh, std::list<xxbuf *>
     }
 }
 
-void XXRtmp::handle_rtmp_other_event() {
+void XXRtmpImpl::handle_rtmp_other_event() {
 
 }
 
 
-int XXRtmp::receive_message(xx_stream *stream) {
+int XXRtmpImpl::receive_message(xx_stream *stream) {
     LOGI("receive message ing");
     rtmp_header *h = &stream->header_;
 
@@ -576,7 +584,7 @@ int XXRtmp::receive_message(xx_stream *stream) {
     return 0;
 }
 
-void XXRtmp::amf_message_handle(xx_stream *stream) {
+void XXRtmpImpl::amf_message_handle(xx_stream *stream) {
     static int i = 0;
     LOGI(" stream bufs size %d", stream->some_.size());
     XXAmf *amf = new XXAmf(&stream->some_);
@@ -594,11 +602,11 @@ void XXRtmp::amf_message_handle(xx_stream *stream) {
 }
 
 
-void XXRtmp::protocol_message_handler() {
+void XXRtmpImpl::protocol_message_handler() {
 
 }
 
-void XXRtmp::on_result(XXAmf *pAmf) {
+void XXRtmpImpl::on_result(XXAmf *pAmf) {
     LOGI("on_result E");
     double trans;
     pAmf->GetTrans(&trans);
@@ -615,18 +623,18 @@ void XXRtmp::on_result(XXAmf *pAmf) {
     LOGI("on_result X");
 }
 
-void XXRtmp::on_error(XXAmf *pAmf) {
+void XXRtmpImpl::on_error(XXAmf *pAmf) {
 
 }
 
 
-void XXRtmp::on_status(XXAmf *pAmf) {
+void XXRtmpImpl::on_status(XXAmf *pAmf) {
     can_publish_ = true;
 
     send_metadata();
 }
 
-void XXRtmp::SendConnect() {
+void XXRtmpImpl::SendConnect() {
     static double trans = NGX_RTMP_RELAY_CONNECT_TRANS;
     static double acodecs = 3575;
     static double vcodecs = 252;
@@ -654,7 +662,7 @@ void XXRtmp::SendConnect() {
     send_amf(&h, root);
 }
 
-void XXRtmp::send_create_stream() {
+void XXRtmpImpl::send_create_stream() {
     static double trans = NGX_RTMP_RELAY_CREATE_STREAM_TRANS;
     LOGI("send_create_stream");
     XXAmf *create_stream = new XXAmf();
@@ -671,7 +679,7 @@ void XXRtmp::send_create_stream() {
     return send_amf(&h, create_stream);
 }
 
-void XXRtmp::send_publish() {
+void XXRtmpImpl::send_publish() {
     static double trans;
 
     XXAmf *publish = new XXAmf();
@@ -691,7 +699,7 @@ void XXRtmp::send_publish() {
     return send_amf(&h, publish);
 }
 
-void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
+void XXRtmpImpl::send_amf(rtmp_header *h, XXAmf *amf) {
     ngx_int_t rc;
     std::list<xxbuf *> t;
 
@@ -705,11 +713,11 @@ void XXRtmp::send_amf(rtmp_header *h, XXAmf *amf) {
     send_message(t);
 }
 
-void XXRtmp::sendVideo() {
+void XXRtmpImpl::sendVideo() {
     LOGI("sendVideo");
 }
 
-void XXRtmp::send_metadata() {
+void XXRtmpImpl::send_metadata() {
 
     static struct {
         double                      width;
@@ -750,7 +758,7 @@ void XXRtmp::send_metadata() {
     send_amf(&h, metadata);
 }
 
-int XXRtmp::parse(const char *url) {
+int XXRtmpImpl::parse(const char *url) {
     char *p = strstr(url, "://");
     if (!p) {
         return XX_ERROR;
