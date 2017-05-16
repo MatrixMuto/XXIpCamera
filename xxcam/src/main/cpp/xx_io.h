@@ -7,6 +7,7 @@
 
 
 #include "xx_core.h"
+#include "xx_rtmp.h"
 
 class event;
 
@@ -41,7 +42,7 @@ public:
     xxio();
     ~xxio();
 
-    int Connect(std::string &ip, event_handler_pt callback, void *data);
+    int Connect(std::string ip, uint16_t port, event_handler_pt callback, void *data);
 
     static void* loop_enter(void*);
 

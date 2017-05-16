@@ -52,7 +52,7 @@ int XXRtmpImpl::CreateSession(const char *url) {
         return err;
     }
 
-    io->Connect(ip_, OnConnect, this);
+    io->Connect(ip_, port_, OnConnect, this);
 
     SendChallenge();
 
@@ -262,7 +262,7 @@ void XXRtmpImpl::Recv(event *rev) {
 //
 //                ngx_log_debug1(NGX_LOG_DEBUG_RTMP, c->log, 0,
 //                               "sending RTMP ACK(%uD)", s->in_bytes);
-//
+//int
 //                if (ngx_rtmp_send_ack(s, s->in_bytes)) {
 //                    ngx_rtmp_finalize_session(s);
 //                    return;
@@ -776,6 +776,7 @@ int XXRtmpImpl::parse(const char *url) {
     *(name - 1) = 0;
 
     ip_ = ip;
+    port_ = 1935;
     app_ = app;
     name_ = name;
     LOGI("%s %s %s", ip, app, name);

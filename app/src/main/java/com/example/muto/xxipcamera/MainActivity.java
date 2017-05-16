@@ -240,7 +240,9 @@ public class MainActivity extends AppCompatActivity {
         public void onImageAvailable(ImageReader reader) {
             Image image = reader.acquireNextImage();
             boolean success = false;
-            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "JPEG_" + System.currentTimeMillis() + ".jpg");
+            File file = new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),
+                    "JPEG_" + System.currentTimeMillis() + ".jpg");
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
@@ -282,10 +284,6 @@ public class MainActivity extends AppCompatActivity {
             mMessageHandler.sendMessage(message);
         }
 
-
-        /**
-         * A {@link Handler} for showing {@link Toast}s on the UI thread.
-         */
         private final Handler mMessageHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {

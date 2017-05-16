@@ -35,7 +35,7 @@ public:
 
     ~XXRtmpImpl();
 
-    static XXSession* CreateSession();
+    static XXSession *CreateSession();
 
     int CreateSession(const char *string);
 
@@ -50,8 +50,6 @@ public:
     static void RtmpSend(event *wev);
 
     static void RtmpRecv(event *rev);
-
-    static ngx_chain_t *alloc_amf_buf(void *arg);
 
     void audio(uint8_t *string, int i, int i1, long long int i2);
 
@@ -110,6 +108,8 @@ private:
 
     void send_metadata();
 
+    int parse(const char *url);
+
 private:
     xxio *io;
     xxbuf *hs_buf;
@@ -120,18 +120,16 @@ private:
     xx_stream *in_streams;
     int in_csid;
 
-
     size_t in_chunk_size;
     uint64_t in_bytes;
     bool can_publish_;
     int64_t start_;
     size_t out_chunk_size_;
 
-    int parse(const char *url);
-
     std::string ip_;
     std::string app_;
     std::string name_;
+    uint16_t port_;
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H
