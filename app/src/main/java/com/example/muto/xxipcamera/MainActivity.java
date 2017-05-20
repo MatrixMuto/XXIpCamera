@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
     private void startCamera() {
 
         cam0.open("0");
-        cam1.open("2");
+//        cam1.open("2");
 
         Button btnCapture = (Button) findViewById(R.id.btnCapture);
         btnCapture.setOnClickListener(
