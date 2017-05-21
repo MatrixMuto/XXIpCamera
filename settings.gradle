@@ -1,1 +1,1 @@
-include ':app', ':xxcam'
+include ':app', ':xxcam', ':libjin'

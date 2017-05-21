@@ -100,6 +100,11 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         this.textureView = textureView;
     }
 
+    public XXCamera(CameraManager manager, Surface surface) {
+        this.manager = manager;
+        this.surface = surface;
+    }
+
     private void startBackgroundThread() {
         mBackgroundThread = new HandlerThread("CameraBackground");
         mBackgroundThread.start();
@@ -144,7 +149,7 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
 
 
                         if (id == mCameraId) {
-                            textureView.setAspectRatio(4, 4);
+//                            textureView.setAspectRatio(4, 4);
                             manager.openCamera(cameraId, deviceCallback, mBackgroundHandler);
                         }
                     }
@@ -222,11 +227,11 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         try {
             ArrayList<Surface> outputs = new ArrayList<>();
 
-            setUpCameraOutputs(textureView.getWidth(), textureView.getHeight());
-
-            SurfaceTexture texture = textureView.getSurfaceTexture();
-            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-
+            if (textureView != null) {
+                setUpCameraOutputs(textureView.getWidth(), textureView.getHeight());
+                SurfaceTexture texture = textureView.getSurfaceTexture();
+                texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            }
             outputs.add(surface);
 
             //preview imagereader
