@@ -6,4 +6,19 @@
     android:layout_height="match_parent"
     tools:context="com.example.muto.xxipcamera.EglActivity">
 
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <org.webrtc.SurfaceViewRenderer
+            android:id="@+id/local_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </org.webrtc.SurfaceViewRenderer>
+    </FrameLayout>
 </android.support.constraint.ConstraintLayout>

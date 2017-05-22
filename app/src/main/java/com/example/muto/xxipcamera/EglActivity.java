@@ -20,6 +20,8 @@ import junit.framework.Assert;
 
 import org.webrtc.EglBase;
 import org.webrtc.SurfaceTextureHelper;
+import org.webrtc.SurfaceViewRenderer;
+import org.webrtc.VideoRenderer;
 
 public class EglActivity extends AppCompatActivity {
 
@@ -30,11 +32,16 @@ public class EglActivity extends AppCompatActivity {
     XXCamera camera;
 
     Surface surface;
-
+    private SurfaceViewRenderer localPreview;
+    EglBase rootEglBase;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_egl);
+        localPreview = (SurfaceViewRenderer) findViewById(R.id.local_preview);
+        rootEglBase = EglBase.create();
+
+        localPreview.init(rootEglBase.getEglBaseContext(), null);
     }
 
     @Override
@@ -60,11 +67,12 @@ public class EglActivity extends AppCompatActivity {
         }
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        final SurfaceTextureHelper helper = SurfaceTextureHelper.create("surf", null);
+        final SurfaceTextureHelper helper = SurfaceTextureHelper.create("surf", rootEglBase.getEglBaseContext());
         helper.startListening(new SurfaceTextureHelper.OnTextureFrameAvailableListener() {
             @Override
             public void onTextureFrameAvailable(int oesTextureId, float[] transformMatrix, long timestampNs) {
                 Log.d(TAG, "onTextureFrameAvailable");
+                localPreview.renderFrame(new VideoRenderer.I420Frame(640, 480, 0, oesTextureId, transformMatrix, 0));
                 helper.returnTextureFrame();
             }
         });
