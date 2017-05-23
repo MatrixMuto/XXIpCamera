@@ -27,11 +27,17 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.TextureView;
 
+import org.webrtc.EglBase;
+import org.webrtc.SurfaceTextureHelper;
+import org.webrtc.SurfaceViewRenderer;
+import org.webrtc.VideoRenderer;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by muto on 17-3-25.
@@ -43,8 +49,8 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
 
     private static final boolean EANBLE_ENCODER = false;
     private static final boolean EANBLE_PREVIEW_READER = false;
+    private SurfaceViewRenderer renderer;
     private XXCamTextureView textureView;
-
 
     private SurfaceHolder hodler;
     private CameraManager manager;
@@ -70,6 +76,8 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     private ImageReader snapshoYuvReader;
     private Size mJpegSize;
     private XXRtmpPublish rtmp;
+    private EglBase rootEglBase;
+    private static Object object = new Object();
     /**
      * Max preview width that is guaranteed by Camera2 API
      */
@@ -81,6 +89,7 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     private static final int MAX_PREVIEW_HEIGHT = 1080;
     private Size mPreviewSize;
     private boolean mFlashSupported;
+    private SurfaceTextureHelper helper;
 
     public XXCamera(CameraManager manager, SurfaceHolder holder) {
         this.manager = manager;
@@ -100,9 +109,9 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         this.textureView = textureView;
     }
 
-    public XXCamera(CameraManager manager, Surface surface) {
+    public XXCamera(CameraManager manager, SurfaceViewRenderer renderer) {
         this.manager = manager;
-        this.surface = surface;
+        this.renderer = renderer;
     }
 
     private void startBackgroundThread() {
@@ -129,34 +138,52 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     public void open(final String cameraId) {
         startBackgroundThread();
         mCameraId = cameraId;
+        rootEglBase = EglBase.create();
+        renderer.init(rootEglBase.getEglBaseContext(), null);
         mBackgroundHandler.post(new Runnable() {
             @Override
             public void run() {
-                try {
-                    String[] camidlist = manager.getCameraIdList();
-                    for (String id : camidlist) {
-                        Log.d(TAG, "camera mCameraId =[" + id + "]");
-                        CameraCharacteristics cc = manager.getCameraCharacteristics(id);
-                        StreamConfigurationMap map = cc.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+                helper = SurfaceTextureHelper.create("surf"+cameraId, null);
+                helper.startListening(new SurfaceTextureHelper.OnTextureFrameAvailableListener() {
+                    @Override
+                    public void onTextureFrameAvailable(int oesTextureId, float[] transformMatrix, long timestampNs) {
+                        Log.d(TAG, "onTextureFrameAvailable");
+                        renderer.renderFrame(new VideoRenderer.I420Frame(640, 480, 0, oesTextureId, transformMatrix, 0));
+                        helper.returnTextureFrame();
+                    }
+                });
+                SurfaceTexture texture = helper.getSurfaceTexture();
+                texture.setDefaultBufferSize(640, 480);
+                surface = new Surface(texture);
+
+                synchronized (object) {
+                    try {
+                        String[] camidlist = manager.getCameraIdList();
+                        for (String id : camidlist) {
+                            Log.d(TAG, "camera mCameraId =[" + id + "]");
+                            CameraCharacteristics cc = manager.getCameraCharacteristics(id);
+                            StreamConfigurationMap map = cc.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 //                        int[] inputFormats = map.getInputFormats();
 //                        for (int format : inputFormats) {
 //
 //                            Log.d(TAG, "camerad[" + cameraId + "] support foramt " + format);
 //                        }
-                        Size largestJpeg = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
-                        int mSensorOrientation = cc.get(CameraCharacteristics.SENSOR_ORIENTATION);
-                        Log.d(TAG, "max jpeg " + largestJpeg.getWidth() + largestJpeg.getHeight() + " " + mSensorOrientation);
+                            Size largestJpeg = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
+                            int mSensorOrientation = cc.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                            Log.d(TAG, "max jpeg " + largestJpeg.getWidth() + largestJpeg.getHeight() + " " + mSensorOrientation);
 
 
-                        if (id == mCameraId) {
+                            if (id.equals(mCameraId)) {
 //                            textureView.setAspectRatio(4, 4);
-                            manager.openCamera(cameraId, deviceCallback, mBackgroundHandler);
-                        }
-                    }
-                } catch (CameraAccessException | SecurityException | NullPointerException e) {
-                    e.printStackTrace();
-                }
 
+                            }
+                        }
+                        manager.openCamera(cameraId, deviceCallback, mBackgroundHandler);
+                    } catch (CameraAccessException | SecurityException | NullPointerException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         });
     }

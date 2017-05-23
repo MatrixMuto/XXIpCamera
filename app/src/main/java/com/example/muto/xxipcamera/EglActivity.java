@@ -28,20 +28,16 @@ public class EglActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE_CAMERA = 1;
     private static final String TAG = "EglActivity";
 
-    XXCamTextureView textureView;
-    XXCamera camera;
-
-    Surface surface;
-    private SurfaceViewRenderer localPreview;
-    EglBase rootEglBase;
+    XXCamera camera0;
+    XXCamera camera2;
+    private SurfaceViewRenderer preview0;
+    private SurfaceViewRenderer preview2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_egl);
-        localPreview = (SurfaceViewRenderer) findViewById(R.id.local_preview);
-        rootEglBase = EglBase.create();
-
-        localPreview.init(rootEglBase.getEglBaseContext(), null);
+        preview0 = (SurfaceViewRenderer) findViewById(R.id.preview0);
+        preview2 = (SurfaceViewRenderer) findViewById(R.id.preview2);
     }
 
     @Override
@@ -65,28 +61,27 @@ public class EglActivity extends AppCompatActivity {
                     PERMISSION_REQUEST_CODE_CAMERA);
             return;
         }
+        openCamera0("0");
+        openCamera2("1");
+    }
 
+    private void openCamera0(String id){
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        final SurfaceTextureHelper helper = SurfaceTextureHelper.create("surf", rootEglBase.getEglBaseContext());
-        helper.startListening(new SurfaceTextureHelper.OnTextureFrameAvailableListener() {
-            @Override
-            public void onTextureFrameAvailable(int oesTextureId, float[] transformMatrix, long timestampNs) {
-                Log.d(TAG, "onTextureFrameAvailable");
-                localPreview.renderFrame(new VideoRenderer.I420Frame(640, 480, 0, oesTextureId, transformMatrix, 0));
-                helper.returnTextureFrame();
-            }
-        });
-        SurfaceTexture texture = helper.getSurfaceTexture();
-        texture.setDefaultBufferSize(640, 480);
-        surface = new Surface(texture);
-        camera = new XXCamera(manager, surface);
-        camera.setJpegSize(new Size(4160, 3120));
-        camera.open("0");
+        camera0 = new XXCamera(manager, preview0);
+        camera0.setJpegSize(new Size(4160, 3120));
+        camera0.open("0");
+    }
+
+    private void openCamera2(String id){
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        camera2 = new XXCamera(manager, preview2);
+        camera2.setJpegSize(new Size(1600, 1200));
+        camera2.open("2");
     }
 
     private void stopCamera() {
-        camera.close();
-        surface.release();
+//        camera.close();
+//        surface.release();
     }
 
     @Override
