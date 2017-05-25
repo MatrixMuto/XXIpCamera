@@ -62,14 +62,14 @@ public class EglActivity extends AppCompatActivity {
             return;
         }
         openCamera0("0");
-        openCamera2("1");
+//        openCamera2("1");
     }
 
     private void openCamera0(String id){
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         camera0 = new XXCamera(manager, preview0);
         camera0.setJpegSize(new Size(4160, 3120));
-        camera0.open("0");
+        camera0.open("1");
     }
 
     private void openCamera2(String id){
