@@ -44,9 +44,9 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
 
     private static final boolean EANBLE_ENCODER = false;
     private static final boolean EANBLE_PREVIEW_READER = false;
+
     private SurfaceViewRenderer renderer;
     private XXCamTextureView textureView;
-
     private SurfaceHolder hodler;
     private CameraManager manager;
     private Surface surface;
@@ -73,14 +73,7 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     private XXRtmpPublish rtmp;
     private EglBase rootEglBase;
     private static Object object = new Object();
-    /**
-     * Max preview width that is guaranteed by Camera2 API
-     */
     private static final int MAX_PREVIEW_WIDTH = 1920;
-
-    /**
-     * Max preview height that is guaranteed by Camera2 API
-     */
     private static final int MAX_PREVIEW_HEIGHT = 1080;
     private Size mPreviewSize;
     private boolean mFlashSupported;
@@ -144,13 +137,13 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     private Runnable openCameraRunnable = new Runnable() {
         @Override
         public void run() {
-
-            helper = SurfaceTextureHelper.create("surf" + mCameraId, rootEglBase.getEglBaseContext());
-            helper.startListening(textureFrameAvailable);
-            SurfaceTexture texture = helper.getSurfaceTexture();
-            texture.setDefaultBufferSize(640, 480);
-            surface = new Surface(texture);
-
+            if (renderer != null) {
+                helper = SurfaceTextureHelper.create("surf" + mCameraId, rootEglBase.getEglBaseContext());
+                helper.startListening(textureFrameAvailable);
+                SurfaceTexture texture = helper.getSurfaceTexture();
+                texture.setDefaultBufferSize(640, 480);
+                surface = new Surface(texture);
+            }
             synchronized (object) {
                 try {
                     String[] camidlist = manager.getCameraIdList();
@@ -176,8 +169,10 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     public void open(final String cameraId) {
         startBackgroundThread();
         mCameraId = cameraId;
-        rootEglBase = EglBase.create();
-        renderer.init(rootEglBase.getEglBaseContext(), null);
+        if (renderer != null) {
+            rootEglBase = EglBase.create();
+            renderer.init(rootEglBase.getEglBaseContext(), null);
+        }
         mBackgroundHandler.post(openCameraRunnable);
     }
 
@@ -275,7 +270,6 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
 //            snapshoYuvReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.RAW12, /*maxImages*/1);
 //            snapshoYuvReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
 //            outputs.add(snapshoYuvReader.getSurface());
-
 
             mCameraDevice.createCaptureSession(outputs, captureSessionCallback, mBackgroundHandler);
 
@@ -526,10 +520,22 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         }
     };
 
+    private static int configured = 0;
     private CameraCaptureSession.StateCallback captureSessionCallback = new CameraCaptureSession.StateCallback() {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
-            Log.d(TAG, "onConfigured");
+            Log.d(TAG, "onConfigured " + mCameraId);
+            while (configured < 2) {
+                synchronized (object) {
+                    configured++;
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            Log.d(TAG, "onConfigured " + mCameraId);
             mCaptureSession = session;
             try {
                 previewReqBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);

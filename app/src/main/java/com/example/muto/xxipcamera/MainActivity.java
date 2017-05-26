@@ -74,13 +74,13 @@ public class MainActivity extends AppCompatActivity {
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView3);
+            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView4);
             SurfaceHolder holder = surfaceView.getHolder();
             cam0 = new XXCamera(manager, holder, bokehSnapShot);
             cam0.setJpegSize(new Size(4160, 3120));
         }
         {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView4);
+            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView5);
             SurfaceHolder holder = surfaceView.getHolder();
             cam1 = new XXCamera(manager, holder, bokehSnapShot);
             cam1.setJpegSize(new Size(1600, 1200));
