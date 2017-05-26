@@ -93,9 +93,9 @@ public class BokehSnapshot implements BokehSnapshotListener {
                 Log.d(TAG, "mainTs - subTs =" + (mainTs - subTs));
                 ByteBuffer mainByteBuffer = main.getPlanes()[0].getBuffer();
                 ByteBuffer subByteBuffer = sub.getPlanes()[0].getBuffer();
-                Native.bokeh_process(
-                        mainByteBuffer, mainByteBuffer.remaining(), main.getWidth(), main.getHeight(),
-                        subByteBuffer, subByteBuffer.remaining(), sub.getWidth(), sub.getHeight());
+//                Native.bokeh_process(
+//                        mainByteBuffer, mainByteBuffer.remaining(), main.getWidth(), main.getHeight(),
+//                        subByteBuffer, subByteBuffer.remaining(), sub.getWidth(), sub.getHeight());
                 onImageAvailable(MAIN_CAMERA_ID, main);
                 onImageAvailable(SUB_CAMERA_ID, sub);
 //                native_process(main.)

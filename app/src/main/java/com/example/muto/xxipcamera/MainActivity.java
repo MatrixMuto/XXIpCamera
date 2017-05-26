@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-//        setupUI();
+        setupUI();
         startCamera();
     }
 
@@ -126,85 +126,82 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-//                        if (mCurrentCamera == 0) {
                         cam0.takePicture();
+//                        cam1.takePicture();
+                    }
+                }
+        );
+//        Button btnSwitch = (Button) findViewById(R.id.btnSwitch);
+//        btnSwitch.setOnClickListener(
+//                new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        if (mCurrentCamera == 0) {
+//                            cam0.close();
+//                            cam1.open("2");
+//                            mCurrentCamera = 1;
 //                        } else {
-                        cam1.takePicture();
+//                            cam1.close();
+//                            cam0.open("0");
+//                            mCurrentCamera = 0;
 //                        }
-                    }
-                }
-        );
-        Button btnSwitch = (Button) findViewById(R.id.btnSwitch);
-        btnSwitch.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (mCurrentCamera == 0) {
-                            cam0.close();
-                            cam1.open("2");
-                            mCurrentCamera = 1;
-                        } else {
-                            cam1.close();
-                            cam0.open("0");
-                            mCurrentCamera = 0;
-                        }
-                    }
-                }
-        );
-        editText = (EditText) findViewById(R.id.editText);
-        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-
-                return false;
-            }
-        });
-        Button btnPublish = (Button) findViewById(R.id.btnPublish);
-        btnPublish.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        switch (rtmpState) {
-                            case 0:
-                                publish = new XXRtmpPublish();
-                                publish.connect(editText.getText().toString());
-                                rtmpState = 1;
-                                break;
-                            case 1:
-                                XXAEncoder ae = new XXAEncoder(publish);
-                                cam0.startEncoder();
-                                cam0.setRtmp(publish);
-                                rtmpState = 2;
-                                break;
-                            case 2:
-                                cam0.stopEncoder();
-                                rtmpState = 0;
-                                break;
-                        }
-                    }
-                }
-        );
-        editTextMain = (EditText) findViewById(R.id.editTextMain);
-        Button btnMain = (Button) findViewById(R.id.btnMain);
-        btnMain.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        cam0.open(editTextMain.getText().toString());
-                    }
-                }
-        );
-
-        editTextAux = (EditText) findViewById(R.id.editTextAux);
-        Button btnAux = (Button) findViewById(R.id.btnAux);
-        btnAux.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        cam1.open(editTextAux.getText().toString());
-                    }
-                }
-        );
+//                    }
+//                }
+//        );
+//        editText = (EditText) findViewById(R.id.editText);
+//        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+//            @Override
+//            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+//
+//                return false;
+//            }
+//        });
+//        Button btnPublish = (Button) findViewById(R.id.btnPublish);
+//        btnPublish.setOnClickListener(
+//                new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        switch (rtmpState) {
+//                            case 0:
+//                                publish = new XXRtmpPublish();
+//                                publish.connect(editText.getText().toString());
+//                                rtmpState = 1;
+//                                break;
+//                            case 1:
+//                                XXAEncoder ae = new XXAEncoder(publish);
+//                                cam0.startEncoder();
+//                                cam0.setRtmp(publish);
+//                                rtmpState = 2;
+//                                break;
+//                            case 2:
+//                                cam0.stopEncoder();
+//                                rtmpState = 0;
+//                                break;
+//                        }
+//                    }
+//                }
+//        );
+//        editTextMain = (EditText) findViewById(R.id.editTextMain);
+//        Button btnMain = (Button) findViewById(R.id.btnMain);
+//        btnMain.setOnClickListener(
+//                new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        cam0.open(editTextMain.getText().toString());
+//                    }
+//                }
+//        );
+//
+//        editTextAux = (EditText) findViewById(R.id.editTextAux);
+//        Button btnAux = (Button) findViewById(R.id.btnAux);
+//        btnAux.setOnClickListener(
+//                new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        cam1.open(editTextAux.getText().toString());
+//                    }
+//                }
+//        );
     }
 
     @Override

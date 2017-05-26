@@ -28,6 +28,7 @@ import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoRenderer;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,7 +59,7 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     private long index;
     private ImageReader previewReader;
     private XXVEncoder encoder;
-    private BokehSnapshotListener listener;
+    private BokehSnapshotListener mJpeglistener;
     private CameraCaptureSession mCaptureSession;
     private int mState = STATE_PREVIEW;
     private static final int STATE_PREVIEW = 0;
@@ -89,7 +90,7 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         this.manager = manager;
         holder.addCallback(surfaceHolderCallback);
         this.hodler = holder;
-        this.listener = listener;
+        this.mJpeglistener = listener;
     }
 
     public XXCamera(CameraManager manager, XXCamTextureView textureView) {
@@ -129,11 +130,14 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         @Override
         public void onTextureFrameAvailable(int oesTextureId, float[] transformMatrix, long timestampNs) {
             Log.d(TAG, "textureFrameAvailable");
-            renderer.renderFrame(new VideoRenderer.I420Frame(640, 480, 0, oesTextureId, transformMatrix, 0));
+            int rotaionDegree = mCameraId.equals("2") ? 180 : 0;
+            renderer.renderFrame(new VideoRenderer.I420Frame(640, 480, rotaionDegree, oesTextureId, transformMatrix, 0));
+            helper.textureToYUV(outFrameBuffer, 640, 480, 640, oesTextureId, transformMatrix);
+
             helper.returnTextureFrame();
         }
     };
-
+    ByteBuffer outFrameBuffer;
     private Runnable openCameraRunnable = new Runnable() {
         @Override
         public void run() {
@@ -142,6 +146,9 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
                 helper.startListening(textureFrameAvailable);
                 SurfaceTexture texture = helper.getSurfaceTexture();
                 texture.setDefaultBufferSize(640, 480);
+
+                int outFrameSize = 640 * 480 * 3 / 2;
+                outFrameBuffer = ByteBuffer.allocateDirect(outFrameSize);
                 surface = new Surface(texture);
             }
             synchronized (object) {
@@ -560,8 +567,8 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         @Override
         public void onImageAvailable(ImageReader reader) {
 //            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
-            if (listener != null) {
-                listener.onImageAvailable(mCameraId, reader);
+            if (mJpeglistener != null) {
+                mJpeglistener.onImageAvailable(mCameraId, reader);
             }
         }
     };
@@ -584,8 +591,8 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         @Override
         public void onImageAvailable(ImageReader reader) {
 //            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
-            if (listener != null) {
-                listener.onImageAvailable(mCameraId, reader);
+            if (mJpeglistener != null) {
+                mJpeglistener.onImageAvailable(mCameraId, reader);
             }
         }
     };
@@ -594,6 +601,10 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
 
         captureStillPicture();
 //        lockFocus();
+    }
+
+    public void zslTakePicture() {
+
     }
 
     private void lockFocus() {
@@ -689,11 +700,11 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     private void captureStillPicture() {
         try {
             final CaptureRequest.Builder captureBuilder =
-                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
             captureBuilder.addTarget(snapshotJpegReader.getSurface());
 
-            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+//            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+//                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
 
             // Orientation
 //            int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
