@@ -14,8 +14,10 @@ public class XXRtmpPublish {
         System.loadLibrary("native-lib");
     }
 
-    public XXRtmpPublish() {
+    private long session;
 
+    public XXRtmpPublish() {
+//        session = native_create_session();
     }
 
     public void connect(String url) {

@@ -5,9 +5,7 @@
 #ifndef XXIPCAMERA_RTMP_CPP_H
 #define XXIPCAMERA_RTMP_CPP_H
 
-#include "xx_io.h"
-#include "xx_amf.h"
-#include "xx_stream.h"
+#include "xx_core.h"
 
 /* RTMP message types */
 #define NGX_RTMP_MSG_CHUNK_SIZE         1

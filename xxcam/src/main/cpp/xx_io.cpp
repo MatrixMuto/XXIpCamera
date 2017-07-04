@@ -2,8 +2,8 @@
 // Created by wq1950 on 17-4-18.
 //
 
+#include "xx_core.h"
 #include "xx_io.h"
-#include "xx_rtmp.h"
 
 #define NGX_TIMER_INFINITE (-1)
 

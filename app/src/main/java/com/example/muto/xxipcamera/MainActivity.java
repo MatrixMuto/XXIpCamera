@@ -29,8 +29,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.mut0.xxcam.BokehPreview;
-import com.mut0.xxcam.BokehSnapshot;
 import com.mut0.xxcam.XXAEncoder;
 import com.mut0.xxcam.XXCamera;
 import com.mut0.xxcam.XXRtmpPublish;
@@ -55,8 +53,6 @@ public class MainActivity extends AppCompatActivity {
     private EditText editText;
     private EditText editTextMain;
     private EditText editTextAux;
-    private BokehSnapshot bokehSnapShot;
-    private BokehPreview bokehPreview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,25 +62,16 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-//        setContentView(R.layout.activity_main);
-        setContentView(R.layout.activity_main_framelayout);
-
-        bokehSnapShot = new BokehSnapshot(getApplicationContext());
-        bokehPreview = new BokehPreview(getApplicationContext());
+        setContentView(R.layout.activity_main);
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView4);
+            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
             SurfaceHolder holder = surfaceView.getHolder();
-            cam0 = new XXCamera(manager, holder, bokehSnapShot);
+            cam0 = new XXCamera(manager, holder);
             cam0.setJpegSize(new Size(4160, 3120));
         }
-        {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView5);
-            SurfaceHolder holder = surfaceView.getHolder();
-            cam1 = new XXCamera(manager, holder, bokehSnapShot);
-            cam1.setJpegSize(new Size(1600, 1200));
-        }
+
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -117,91 +104,45 @@ public class MainActivity extends AppCompatActivity {
 
     private void startCamera() {
         cam0.open("0");
-        cam1.open("2");
     }
 
     private void setupUI() {
-        Button btnCapture = (Button) findViewById(R.id.btnCapture);
-        btnCapture.setOnClickListener(
+        editText = (EditText) findViewById(R.id.editText);
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+
+                return false;
+            }
+        });
+
+
+        Button btnPublish = (Button) findViewById(R.id.btnPublish);
+        btnPublish.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        cam0.takePicture();
-//                        cam1.takePicture();
+                        switch (rtmpState) {
+                            case 0:
+                                publish = new XXRtmpPublish();
+                                publish.connect(editText.getText().toString());
+                                rtmpState = 1;
+                                break;
+                            case 1:
+                                XXAEncoder ae = new XXAEncoder(publish);
+                                cam0.startEncoder();
+                                cam0.setRtmp(publish);
+                                rtmpState = 2;
+                                break;
+                            case 2:
+                                cam0.stopEncoder();
+                                rtmpState = 0;
+                                break;
+                        }
                     }
                 }
         );
-//        Button btnSwitch = (Button) findViewById(R.id.btnSwitch);
-//        btnSwitch.setOnClickListener(
-//                new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        if (mCurrentCamera == 0) {
-//                            cam0.close();
-//                            cam1.open("2");
-//                            mCurrentCamera = 1;
-//                        } else {
-//                            cam1.close();
-//                            cam0.open("0");
-//                            mCurrentCamera = 0;
-//                        }
-//                    }
-//                }
-//        );
-//        editText = (EditText) findViewById(R.id.editText);
-//        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-//            @Override
-//            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-//
-//                return false;
-//            }
-//        });
-//        Button btnPublish = (Button) findViewById(R.id.btnPublish);
-//        btnPublish.setOnClickListener(
-//                new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        switch (rtmpState) {
-//                            case 0:
-//                                publish = new XXRtmpPublish();
-//                                publish.connect(editText.getText().toString());
-//                                rtmpState = 1;
-//                                break;
-//                            case 1:
-//                                XXAEncoder ae = new XXAEncoder(publish);
-//                                cam0.startEncoder();
-//                                cam0.setRtmp(publish);
-//                                rtmpState = 2;
-//                                break;
-//                            case 2:
-//                                cam0.stopEncoder();
-//                                rtmpState = 0;
-//                                break;
-//                        }
-//                    }
-//                }
-//        );
-//        editTextMain = (EditText) findViewById(R.id.editTextMain);
-//        Button btnMain = (Button) findViewById(R.id.btnMain);
-//        btnMain.setOnClickListener(
-//                new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        cam0.open(editTextMain.getText().toString());
-//                    }
-//                }
-//        );
-//
-//        editTextAux = (EditText) findViewById(R.id.editTextAux);
-//        Button btnAux = (Button) findViewById(R.id.btnAux);
-//        btnAux.setOnClickListener(
-//                new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        cam1.open(editTextAux.getText().toString());
-//                    }
-//                }
-//        );
+
     }
 
     @Override

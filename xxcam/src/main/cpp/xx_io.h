@@ -5,9 +5,7 @@
 #ifndef XXIPCAMERA_XXIO_H
 #define XXIPCAMERA_XXIO_H
 
-
 #include "xx_core.h"
-#include "xx_rtmp.h"
 
 class event;
 

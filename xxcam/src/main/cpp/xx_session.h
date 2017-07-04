@@ -5,7 +5,7 @@
 #ifndef XXRTMP_XX_SESSION_H
 #define XXRTMP_XX_SESSION_H
 
-#include "xx_api.h"
+
 #include "xx_core.h"
 
 class  XXSessionImpl: public XXSession{

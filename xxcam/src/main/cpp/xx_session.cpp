@@ -3,7 +3,6 @@
 //
 
 #include "xx_session.h"
-#include "xx_connection.h"
 
 XXSessionImpl::XXSessionImpl() {
 

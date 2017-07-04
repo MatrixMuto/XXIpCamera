@@ -62,6 +62,7 @@ Java_com_mut0_xxcam_XXRtmpPublish_native_1connect(JNIEnv *env, jobject instance,
     const char *url = env->GetStringUTFChars(url_, 0);
 
     XXSession* session = XXRtmp::CreateSession();
+
     session->CreateConnection(url, 0);
 
     env->ReleaseStringUTFChars(url_, url);

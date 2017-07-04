@@ -28,7 +28,6 @@
 
 typedef  uint8_t u_char;
 
-#include "xx_api.h"
 #include "xx_log.h"
 #include "xx_pool.h"
 #include "xx_buf.h"

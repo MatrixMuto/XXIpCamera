@@ -4,8 +4,6 @@
 
 
 #include "xx_rtmp.h"
-#include "xx_stream.h"
-#include "xx_amf.h"
 
 
 #define NGX_RTMP_RELAY_FLASHVER                 "LNX.11,1,102,55"

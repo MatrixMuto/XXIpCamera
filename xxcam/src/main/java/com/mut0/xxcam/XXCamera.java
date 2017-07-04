@@ -43,7 +43,7 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
 
     private static final String TAG = "XXCamera";
 
-    private static final boolean EANBLE_ENCODER = false;
+    private static final boolean EANBLE_ENCODER = true;
     private static final boolean EANBLE_PREVIEW_READER = false;
 
     private SurfaceViewRenderer renderer;
@@ -59,7 +59,6 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     private long index;
     private ImageReader previewReader;
     private XXVEncoder encoder;
-    private BokehSnapshotListener mJpeglistener;
     private CameraCaptureSession mCaptureSession;
     private int mState = STATE_PREVIEW;
     private static final int STATE_PREVIEW = 0;
@@ -84,13 +83,6 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
     public XXCamera(CameraManager manager, SurfaceHolder holder) {
         this.manager = manager;
         holder.addCallback(surfaceHolderCallback);
-    }
-
-    public XXCamera(CameraManager manager, SurfaceHolder holder, BokehSnapshotListener listener) {
-        this.manager = manager;
-        holder.addCallback(surfaceHolderCallback);
-        this.hodler = holder;
-        this.mJpeglistener = listener;
     }
 
     public XXCamera(CameraManager manager, XXCamTextureView textureView) {
@@ -270,9 +262,9 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
             }
 
             //StillCaputre ImageReader
-            snapshotJpegReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.JPEG, /*maxImages*/1);
-            snapshotJpegReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
-            outputs.add(snapshotJpegReader.getSurface());
+//            snapshotJpegReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.JPEG, /*maxImages*/1);
+//            snapshotJpegReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
+//            outputs.add(snapshotJpegReader.getSurface());
 
 //            snapshoYuvReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(), ImageFormat.RAW12, /*maxImages*/1);
 //            snapshoYuvReader.setOnImageAvailableListener(mOnJpegImageAvailableListener, mBackgroundHandler);
@@ -563,15 +555,15 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
         }
     };
 
-    private ImageReader.OnImageAvailableListener mOnJpegImageAvailableListener = new ImageReader.OnImageAvailableListener() {
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-//            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
-            if (mJpeglistener != null) {
-                mJpeglistener.onImageAvailable(mCameraId, reader);
-            }
-        }
-    };
+//    private ImageReader.OnImageAvailableListener mOnJpegImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+//        @Override
+//        public void onImageAvailable(ImageReader reader) {
+////            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+//            if (mJpeglistener != null) {
+//                mJpeglistener.onImageAvailable(mCameraId, reader);
+//            }
+//        }
+//    };
 
 
     private ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
@@ -587,15 +579,15 @@ public class XXCamera implements TextureView.SurfaceTextureListener {
             image.close();
         }
     };
-    private ImageReader.OnImageAvailableListener mOnYuvImageAvailableListener = new ImageReader.OnImageAvailableListener() {
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-//            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
-            if (mJpeglistener != null) {
-                mJpeglistener.onImageAvailable(mCameraId, reader);
-            }
-        }
-    };
+//    private ImageReader.OnImageAvailableListener mOnYuvImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+//        @Override
+//        public void onImageAvailable(ImageReader reader) {
+////            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+//            if (mJpeglistener != null) {
+//                mJpeglistener.onImageAvailable(mCameraId, reader);
+//            }
+//        }
+//    };
 
     public void takePicture() {
 
