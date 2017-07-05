@@ -24,9 +24,6 @@ public:
     int error;
 };
 
-class queue {
-
-};
 
 class xxconnection {
 public:

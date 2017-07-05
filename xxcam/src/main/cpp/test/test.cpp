@@ -3,10 +3,15 @@
 
 #include "../api/xx_api.h"
 
+using namespace xx;
+
+class cccc : public XXConnectionCallback {
+
+};
 void test_play() {
     XXSession *session = XXRtmp::CreateSession();
     /* Handshake? */
-    XXConnection *conn = session->CreateConnection("", nullptr);
+    XXConnection *conn = session->CreateConnection("",);
 
     /* chunk size? window ack size? */
     /* conn == chunk stream? */

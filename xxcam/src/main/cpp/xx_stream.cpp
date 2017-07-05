@@ -2,7 +2,6 @@
 // Created by muto on 17-4-27.
 //
 #include "xx_core.h"
-#include "xx_stream.h"
 
 xx_stream::xx_stream() {
     len_ = 0;

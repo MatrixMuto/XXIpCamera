@@ -7,6 +7,8 @@
 
 #include <string>
 
+namespace xx {
+
 class XXStream {
 public:
     virtual void Publish() = 0;
@@ -65,5 +67,5 @@ public:
     static XXSession *CreateSession();
 };
 
-
+}
 #endif //XXRTMP_XX_API_H

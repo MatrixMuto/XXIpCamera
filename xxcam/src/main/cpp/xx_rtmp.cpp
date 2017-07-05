@@ -3,7 +3,7 @@
 //
 
 
-#include "xx_rtmp.h"
+#include "xx_core.h"
 
 
 #define NGX_RTMP_RELAY_FLASHVER                 "LNX.11,1,102,55"
@@ -18,13 +18,6 @@
 #define NGX_RTMP_CSID_VIDEO             7
 #define NGX_RTMP_RELAY_MSID                     1
 
-
-
-/* static */
-XXSession* XXRtmp::CreateSession()
-{
-    return new XXSessionImpl();
-}
 
 /* Called in User thread */
 XXRtmpImpl::XXRtmpImpl() {
@@ -44,7 +37,6 @@ int XXRtmpImpl::CreateSession(const char *url) {
     int err;
     in_csid = 0;
 
-
     err = parse(url);
     if (err) {
         return err;
@@ -53,7 +45,6 @@ int XXRtmpImpl::CreateSession(const char *url) {
     io->Connect(ip_, port_, OnConnect, this);
 
     SendChallenge();
-
 
     io->Start();
 
@@ -718,19 +709,19 @@ void XXRtmpImpl::sendVideo() {
 void XXRtmpImpl::send_metadata() {
 
     static struct {
-        double                      width;
-        double                      height;
-        double                      duration;
-        double                      video_codec_id;
-        double                      audio_codec_id;
-        double                      audio_sample_rate;
-    }                               v;
+        double width;
+        double height;
+        double duration;
+        double video_codec_id;
+        double audio_codec_id;
+        double audio_sample_rate;
+    } v;
 
 
     XXAmf *obj = new XXAmf();
     obj->push_back({XX_RTMP_AMF_NUMBER, "width", (void *) &v.width, 0});
     obj->push_back({XX_RTMP_AMF_NUMBER, "height", (void *) &v.height, 0});
-    obj->push_back({XX_RTMP_AMF_NUMBER, "displayWidth",(void *) &v.width , 0});
+    obj->push_back({XX_RTMP_AMF_NUMBER, "displayWidth", (void *) &v.width, 0});
     obj->push_back({XX_RTMP_AMF_NUMBER, "displayHeight", (void *) &v.height, 0});
     obj->push_back({XX_RTMP_AMF_NUMBER, "duration", (void *) &v.duration, 0});
     obj->push_back({XX_RTMP_AMF_NUMBER, "videocodecid", (void *) &v.audio_codec_id, 0});

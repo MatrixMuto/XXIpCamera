@@ -2,7 +2,7 @@
 // Created by wq1950 on 17-4-26.
 //
 
-#include "xx_buf.h"
+#include "xx_core.h"
 
 xxbuf::xxbuf(size_t capbity) {
     start = (u_char *) malloc(capbity);

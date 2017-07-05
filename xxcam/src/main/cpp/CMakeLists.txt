@@ -8,14 +8,9 @@ set(SOURCE xx_rtmp.cpp
         xx_io.cpp
         xx_buf.cpp
         xx_amf.cpp
-        xx_pool.cpp
-        xx_pool.h
         xx_handshake.cpp
         xx_stream.cpp
-        xx_flv.cpp
-        xx_session.cpp
-        xx_connection.cpp
-        xx_netstream.cpp)
+)
 
 set(SOURCE ${SOURCE} xx_jni.cpp )
 add_library(native-lib SHARED ${SOURCE})

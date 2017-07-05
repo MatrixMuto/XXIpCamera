@@ -28,21 +28,6 @@
 
 typedef  uint8_t u_char;
 
-#include "xx_log.h"
-#include "xx_pool.h"
-#include "xx_buf.h"
-#include "xx_session.h"
-#include "xx_connection.h"
-#include "xx_io.h"
-
-#define  XX_OK          0
-#define  XX_ERROR      -1
-#define  XX_AGAIN      -2
-#define  XX_BUSY       -3
-#define  XX_DONE       -4
-#define  XX_DECLINED   -5
-#define  XX_ABORT      -6
-
 
 struct rtmp_header {
 public:
@@ -56,6 +41,23 @@ public:
 typedef void *ngx_buf_tag_t;
 
 typedef struct ngx_buf_s ngx_buf_t;
+
+
+#include "xx_buf.h"
+#include "xx_amf.h"
+#include "xx_log.h"
+#include "xx_io.h"
+#include "xx_stream.h"
+#include "xx_rtmp.h"
+
+#define  XX_OK          0
+#define  XX_ERROR      -1
+#define  XX_AGAIN      -2
+#define  XX_BUSY       -3
+#define  XX_DONE       -4
+#define  XX_DECLINED   -5
+#define  XX_ABORT      -6
+
 
 struct ngx_buf_s {
     u_char *pos;

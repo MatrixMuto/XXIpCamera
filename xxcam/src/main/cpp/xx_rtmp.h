@@ -5,8 +5,6 @@
 #ifndef XXIPCAMERA_RTMP_CPP_H
 #define XXIPCAMERA_RTMP_CPP_H
 
-#include "xx_core.h"
-
 /* RTMP message types */
 #define NGX_RTMP_MSG_CHUNK_SIZE         1
 #define NGX_RTMP_MSG_ABORT              2
@@ -33,9 +31,7 @@ public:
 
     ~XXRtmpImpl();
 
-    static XXSession *CreateSession();
-
-    int CreateSession(const char *string);
+    int CreateSession(const char *url);
 
     void video(uint8_t *pos, int n, int flag, long long int ts);
 
@@ -128,6 +124,8 @@ private:
     std::string app_;
     std::string name_;
     uint16_t port_;
+
+
 };
 
 #endif //XXIPCAMERA_RTMP_CPP_H
